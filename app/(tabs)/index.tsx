@@ -1,4 +1,3 @@
-import { Buffer } from "buffer";
 import React, { useState } from "react";
 import {
 	View,
@@ -11,11 +10,12 @@ import {
 	ActivityIndicator,
 } from "react-native";
 import { BleManager } from "react-native-ble-plx";
+import { Buffer } from "buffer"; // Import Buffer
 
 const manager = new BleManager();
 const ESP32_NAME = "ESP32_TEST";
 
-// Same UUIDs as in your ESP32 code
+// UUIDs for your ESP32
 const SERVICE_UUID = "4fafc201-1fb5-459e-8fcc-c5c9c331914b";
 const CHARACTERISTIC_UUID = "beb5483e-36e1-4688-b7f5-ea07361b26a8";
 
@@ -24,7 +24,7 @@ export default function App() {
 	const [isConnected, setIsConnected] = useState(false);
 	const [isLoading, setIsLoading] = useState(false);
 
-	// Function to request permissions for Bluetooth
+	// Request permissions for Android
 	const requestPermissions = async () => {
 		if (Platform.OS === "android") {
 			try {
@@ -55,7 +55,7 @@ export default function App() {
 		return true;
 	};
 
-	// Function to scan and connect to ESP32
+	// Scan and connect to the ESP32
 	const scanAndConnect = async () => {
 		setIsLoading(true);
 
@@ -67,7 +67,6 @@ export default function App() {
 				return;
 			}
 
-			// Start scanning
 			manager.startDeviceScan(null, null, async (error, device) => {
 				if (error) {
 					console.log("Scanning error:", error);
@@ -76,13 +75,12 @@ export default function App() {
 					return;
 				}
 
-				// Check if this is our ESP32 device
 				if (device?.name === ESP32_NAME) {
 					manager.stopDeviceScan();
 					console.log("Found device:", device.name);
 
 					try {
-						// Connect to the device
+						// Connect using device ID
 						const connectedDevice = await device.connect();
 						setIsConnected(true);
 						console.log("Connected to device:", connectedDevice.name);
@@ -91,7 +89,7 @@ export default function App() {
 						const discoveredDevice =
 							await connectedDevice.discoverAllServicesAndCharacteristics();
 
-						// Monitor the characteristic for updates
+						// Monitor the characteristic
 						discoveredDevice.monitorCharacteristicForService(
 							SERVICE_UUID,
 							CHARACTERISTIC_UUID,
@@ -102,7 +100,6 @@ export default function App() {
 								}
 
 								if (characteristic?.value) {
-									// Decode the base64 value
 									const decodedValue = Buffer.from(
 										characteristic.value,
 										"base64"
@@ -113,7 +110,7 @@ export default function App() {
 							}
 						);
 
-						// Handle device disconnection
+						// Handle disconnection
 						connectedDevice.onDisconnected(() => {
 							console.log("Device disconnected");
 							setIsConnected(false);
@@ -123,7 +120,6 @@ export default function App() {
 						Alert.alert("Error connecting to device");
 						setIsConnected(false);
 					}
-
 					setIsLoading(false);
 				}
 			});
@@ -134,7 +130,7 @@ export default function App() {
 		}
 	};
 
-	// Function to disconnect from the ESP32
+	// Disconnect from the ESP32
 	const disconnect = async () => {
 		try {
 			await manager.cancelDeviceConnection(ESP32_NAME);
