@@ -1,3 +1,4 @@
+import { Buffer } from "buffer";
 import React, { useState } from "react";
 import {
 	View,
@@ -7,6 +8,7 @@ import {
 	Alert,
 	PermissionsAndroid,
 	Platform,
+	ActivityIndicator,
 } from "react-native";
 import { BleManager } from "react-native-ble-plx";
 
@@ -22,27 +24,47 @@ export default function App() {
 	const [isConnected, setIsConnected] = useState(false);
 	const [isLoading, setIsLoading] = useState(false);
 
+	// Function to request permissions for Bluetooth
+	const requestPermissions = async () => {
+		if (Platform.OS === "android") {
+			try {
+				const granted = await PermissionsAndroid.requestMultiple([
+					PermissionsAndroid.PERMISSIONS.BLUETOOTH_SCAN,
+					PermissionsAndroid.PERMISSIONS.BLUETOOTH_CONNECT,
+					PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
+				]);
+
+				if (
+					granted["android.permission.BLUETOOTH_SCAN"] !==
+						PermissionsAndroid.RESULTS.GRANTED ||
+					granted["android.permission.BLUETOOTH_CONNECT"] !==
+						PermissionsAndroid.RESULTS.GRANTED ||
+					granted["android.permission.ACCESS_FINE_LOCATION"] !==
+						PermissionsAndroid.RESULTS.GRANTED
+				) {
+					Alert.alert("Bluetooth permissions are required");
+					return false;
+				}
+				return true;
+			} catch (error) {
+				console.log("Permission error:", error);
+				Alert.alert("Failed to get Bluetooth permissions");
+				return false;
+			}
+		}
+		return true;
+	};
+
+	// Function to scan and connect to ESP32
 	const scanAndConnect = async () => {
 		setIsLoading(true);
 
 		try {
-			// Request permission first
-			if (Platform.OS === "android") {
-				const granted = await PermissionsAndroid.request(
-					PermissionsAndroid.PERMISSIONS.BLUETOOTH_SCAN,
-					{
-						title: "Bluetooth Permission",
-						message: "This app needs access to Bluetooth",
-						buttonNeutral: "Ask Me Later",
-						buttonNegative: "Cancel",
-						buttonPositive: "OK",
-					}
-				);
-				if (granted !== PermissionsAndroid.RESULTS.GRANTED) {
-					Alert.alert("Bluetooth permission is required");
-					setIsLoading(false);
-					return;
-				}
+			// Request permissions
+			const hasPermissions = await requestPermissions();
+			if (!hasPermissions) {
+				setIsLoading(false);
+				return;
 			}
 
 			// Start scanning
@@ -57,17 +79,19 @@ export default function App() {
 				// Check if this is our ESP32 device
 				if (device?.name === ESP32_NAME) {
 					manager.stopDeviceScan();
+					console.log("Found device:", device.name);
 
 					try {
-						// Connect to device
+						// Connect to the device
 						const connectedDevice = await device.connect();
 						setIsConnected(true);
+						console.log("Connected to device:", connectedDevice.name);
 
 						// Discover services and characteristics
 						const discoveredDevice =
 							await connectedDevice.discoverAllServicesAndCharacteristics();
 
-						// Set up notification/indication handling
+						// Monitor the characteristic for updates
 						discoveredDevice.monitorCharacteristicForService(
 							SERVICE_UUID,
 							CHARACTERISTIC_UUID,
@@ -78,15 +102,22 @@ export default function App() {
 								}
 
 								if (characteristic?.value) {
-									// Decode base64 value if needed
+									// Decode the base64 value
 									const decodedValue = Buffer.from(
 										characteristic.value,
 										"base64"
 									).toString();
+									console.log("Received value:", decodedValue);
 									setValue(decodedValue);
 								}
 							}
 						);
+
+						// Handle device disconnection
+						connectedDevice.onDisconnected(() => {
+							console.log("Device disconnected");
+							setIsConnected(false);
+						});
 					} catch (connectionError) {
 						console.log("Connection error:", connectionError);
 						Alert.alert("Error connecting to device");
@@ -103,10 +134,12 @@ export default function App() {
 		}
 	};
 
+	// Function to disconnect from the ESP32
 	const disconnect = async () => {
 		try {
 			await manager.cancelDeviceConnection(ESP32_NAME);
 			setIsConnected(false);
+			console.log("Disconnected from device");
 		} catch (error) {
 			console.log("Disconnection error:", error);
 		}
@@ -120,7 +153,7 @@ export default function App() {
 				onPress={isConnected ? disconnect : scanAndConnect}
 				disabled={isLoading}
 			/>
-			{isLoading && <Text>Scanning...</Text>}
+			{isLoading && <ActivityIndicator size="large" color="#0000ff" />}
 		</View>
 	);
 }
@@ -130,9 +163,13 @@ const styles = StyleSheet.create({
 		flex: 1,
 		justifyContent: "center",
 		alignItems: "center",
+		padding: 20,
+		backgroundColor: "#f5f5f5",
 	},
 	valueText: {
 		fontSize: 18,
 		marginBottom: 20,
+		textAlign: "center",
+		color: "#333",
 	},
 });
