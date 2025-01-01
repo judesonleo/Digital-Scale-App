@@ -9,7 +9,7 @@ import {
 	Platform,
 	ActivityIndicator,
 } from "react-native";
-import { BleManager } from "react-native-ble-plx";
+import { BleManager, Device } from "react-native-ble-plx";
 import { Buffer } from "buffer"; // Import Buffer
 
 const manager = new BleManager();
@@ -23,6 +23,7 @@ export default function App() {
 	const [value, setValue] = useState("No value");
 	const [isConnected, setIsConnected] = useState(false);
 	const [isLoading, setIsLoading] = useState(false);
+	const [device, setDevice] = useState<Device | null>(null); // Save the connected device
 
 	// Request permissions for Android
 	const requestPermissions = async () => {
@@ -80,8 +81,9 @@ export default function App() {
 					console.log("Found device:", device.name);
 
 					try {
-						// Connect using device ID
+						// Connect using device object
 						const connectedDevice = await device.connect();
+						setDevice(connectedDevice); // Save the device reference
 						setIsConnected(true);
 						console.log("Connected to device:", connectedDevice.name);
 
@@ -114,11 +116,13 @@ export default function App() {
 						connectedDevice.onDisconnected(() => {
 							console.log("Device disconnected");
 							setIsConnected(false);
+							setDevice(null); // Clear the device reference
 						});
 					} catch (connectionError) {
 						console.log("Connection error:", connectionError);
 						Alert.alert("Error connecting to device");
 						setIsConnected(false);
+						setDevice(null); // Clear the device reference on failure
 					}
 					setIsLoading(false);
 				}
@@ -132,12 +136,16 @@ export default function App() {
 
 	// Disconnect from the ESP32
 	const disconnect = async () => {
-		try {
-			await manager.cancelDeviceConnection(ESP32_NAME);
-			setIsConnected(false);
-			console.log("Disconnected from device");
-		} catch (error) {
-			console.log("Disconnection error:", error);
+		if (device) {
+			try {
+				await device.cancelConnection(); // Disconnect using device reference
+				setIsConnected(false);
+				console.log("Disconnected from device");
+			} catch (error) {
+				console.log("Disconnection error:", error);
+			}
+		} else {
+			console.log("No device to disconnect from.");
 		}
 	};
 
