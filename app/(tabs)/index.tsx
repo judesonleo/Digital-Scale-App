@@ -23,11 +23,11 @@ export default function App() {
 	const [value, setValue] = useState("No value");
 	const [isConnected, setIsConnected] = useState(false);
 	const [isLoading, setIsLoading] = useState(false);
-	const [device, setDevice] = useState<Device | null>(null); // Save the connected device
+	const [device, setDevice] = useState<Device | null>(null);
 
-	// Request permissions for Android
+	// Request permissions for Android 12+ (API 31+)
 	const requestPermissions = async () => {
-		if (Platform.OS === "android") {
+		if (Platform.OS === "android" && Platform.Version >= 31) {
 			try {
 				const granted = await PermissionsAndroid.requestMultiple([
 					PermissionsAndroid.PERMISSIONS.BLUETOOTH_SCAN,
@@ -56,18 +56,75 @@ export default function App() {
 		return true;
 	};
 
+	// Request permissions for Android 6.0 to 11 (API 23 to 30)
+	const requestLegacyPermissions = async () => {
+		if (
+			Platform.OS === "android" &&
+			Platform.Version >= 23 &&
+			Platform.Version < 31
+		) {
+			try {
+				const granted = await PermissionsAndroid.request(
+					PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION
+				);
+				if (granted !== PermissionsAndroid.RESULTS.GRANTED) {
+					Alert.alert("Location permission is required for BLE scanning");
+					return false;
+				}
+				return true;
+			} catch (error) {
+				console.log("Permission error:", error);
+				return false;
+			}
+		}
+		return true;
+	};
+
+	// Check if BLE is supported
+	const checkBleSupport = async () => {
+		if (!manager) {
+			Alert.alert("BLE Manager is not initialized");
+			return false;
+		}
+		try {
+			const isSupported = await manager.state();
+			if (isSupported !== "PoweredOn") {
+				Alert.alert("Please enable Bluetooth to use this feature.");
+				return false;
+			}
+			return true;
+		} catch (error) {
+			console.log("BLE support check error:", error);
+			return false;
+		}
+	};
+
 	// Scan and connect to the ESP32
 	const scanAndConnect = async () => {
 		setIsLoading(true);
 
 		try {
-			// Request permissions
-			const hasPermissions = await requestPermissions();
+			// Request permissions dynamically
+			let hasPermissions = false;
+			if (Number(Platform.Version) >= 31) {
+				hasPermissions = await requestPermissions();
+			} else {
+				hasPermissions = await requestLegacyPermissions();
+			}
+
 			if (!hasPermissions) {
 				setIsLoading(false);
 				return;
 			}
 
+			// Check BLE support
+			const isBleSupported = await checkBleSupport();
+			if (!isBleSupported) {
+				setIsLoading(false);
+				return;
+			}
+
+			// Start scanning
 			manager.startDeviceScan(null, null, async (error, device) => {
 				if (error) {
 					console.log("Scanning error:", error);
@@ -81,18 +138,14 @@ export default function App() {
 					console.log("Found device:", device.name);
 
 					try {
-						// Connect using device object
 						const connectedDevice = await device.connect();
-						setDevice(connectedDevice); // Save the device reference
+						setDevice(connectedDevice);
 						setIsConnected(true);
 						console.log("Connected to device:", connectedDevice.name);
-
-						// Discover services and characteristics
-						const discoveredDevice =
-							await connectedDevice.discoverAllServicesAndCharacteristics();
+						await connectedDevice.discoverAllServicesAndCharacteristics();
 
 						// Monitor the characteristic
-						discoveredDevice.monitorCharacteristicForService(
+						connectedDevice.monitorCharacteristicForService(
 							SERVICE_UUID,
 							CHARACTERISTIC_UUID,
 							(error, characteristic) => {
@@ -116,13 +169,12 @@ export default function App() {
 						connectedDevice.onDisconnected(() => {
 							console.log("Device disconnected");
 							setIsConnected(false);
-							setDevice(null); // Clear the device reference
+							setDevice(null);
 						});
 					} catch (connectionError) {
 						console.log("Connection error:", connectionError);
 						Alert.alert("Error connecting to device");
 						setIsConnected(false);
-						setDevice(null); // Clear the device reference on failure
 					}
 					setIsLoading(false);
 				}
@@ -138,7 +190,7 @@ export default function App() {
 	const disconnect = async () => {
 		if (device) {
 			try {
-				await device.cancelConnection(); // Disconnect using device reference
+				await device.cancelConnection();
 				setIsConnected(false);
 				console.log("Disconnected from device");
 			} catch (error) {

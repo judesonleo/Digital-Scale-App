@@ -2,10 +2,6 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
   <dict>
-    <key>NSBluetoothAlwaysUsageDescription</key>
-    <string>We need to use Bluetooth to connect to the ESP32</string>
-    <key>NSBluetoothPeripheralUsageDescription</key>
-    <string>We need to use Bluetooth to connect to the ESP32</string>
     <key>CADisableMinimumFrameDurationOnPhone</key>
     <true/>
     <key>CFBundleDevelopmentRegion</key>
@@ -35,6 +31,12 @@
           <string>com.anonymous.blereader</string>
         </array>
       </dict>
+      <dict>
+        <key>CFBundleURLSchemes</key>
+        <array>
+          <string>exp+ble-reader</string>
+        </array>
+      </dict>
     </array>
     <key>CFBundleVersion</key>
     <string>1</string>
@@ -51,6 +53,8 @@
     </dict>
     <key>NSBluetoothAlwaysUsageDescription</key>
     <string>Allow $(PRODUCT_NAME) to connect to bluetooth devices</string>
+    <key>NSBluetoothPeripheralUsageDescription</key>
+    <string>We need to use Bluetooth to connect to the ESP32</string>
     <key>NSUserActivityTypes</key>
     <array>
       <string>$(PRODUCT_BUNDLE_IDENTIFIER).expo.index_route</string>
