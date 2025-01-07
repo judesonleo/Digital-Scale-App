@@ -16,6 +16,24 @@ This is an [Expo](https://expo.dev) project created with [`create-expo-app`](htt
     npx expo start
    ```
 
+3. Prebuild to use in andriod and ios
+
+```
+ npx expo prebuild
+```
+
+4. To run in IOS
+
+```
+npx expo run:ios
+```
+
+5. To run in Android
+
+```
+npx expo run:android
+```
+
 In the output, you'll find options to open the app in a
 
 - [development build](https://docs.expo.dev/develop/development-builds/introduction/)
