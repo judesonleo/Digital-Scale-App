@@ -132,16 +132,24 @@ export default function App() {
 				return;
 			}
 
+			const scanTimeout = setTimeout(() => {
+				manager.stopDeviceScan();
+				setIsLoading(false);
+				Alert.alert("Scan timed out, try again.");
+			}, 10000); // Stop scanning after 10 seconds
+
 			// Start scanning
 			manager.startDeviceScan(null, null, async (error, device) => {
 				if (error) {
 					console.log("Scanning error:", error);
+					clearTimeout(scanTimeout);
 					setIsLoading(false);
 					Alert.alert("Error scanning for devices");
 					return;
 				}
 
 				if (device?.name === ESP32_NAME) {
+					clearTimeout(scanTimeout);
 					manager.stopDeviceScan();
 					console.log("Found device:", device.name);
 
@@ -277,7 +285,7 @@ export default function App() {
 					{ color: scheme === "dark" ? "#fff" : "#333" },
 				]}
 			>
-				Bluetooth BLE Connector
+				Digital Scale
 			</Text>
 
 			{/* Status Card */}
