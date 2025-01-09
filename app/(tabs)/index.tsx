@@ -15,6 +15,7 @@ import { BleManager, Device } from "react-native-ble-plx";
 import { Buffer } from "buffer"; // Import Buffer
 import axios from "axios";
 import { Picker } from "@react-native-picker/picker";
+import Toast from "react-native-toast-message";
 
 const manager = new BleManager();
 const ESP32_NAME = "ESP32_TEST";
@@ -210,7 +211,13 @@ export default function App() {
 
 	const handleCapture = () => {
 		if (!userId) {
-			alert("Please select a user before capturing.");
+			Toast.show({
+				type: "error",
+				position: "top",
+				text1: "Error",
+				text2: "Please select a user before capturing.",
+				visibilityTime: 2000,
+			});
 			return;
 		}
 
@@ -222,7 +229,13 @@ export default function App() {
 
 		// Simulate the capturing process with a timeout
 		setTimeout(() => {
-			alert(`Data for User ${userId} captured successfully!`);
+			Toast.show({
+				type: "success",
+				position: "top",
+				text1: `Data Captured for User ${userId}`,
+				text2: `Value: ${value}`,
+				visibilityTime: 2000,
+			});
 			setIsCapturing(false);
 		}, 2000);
 	};
@@ -345,16 +358,8 @@ export default function App() {
 				</Text>
 			</TouchableOpacity>
 			{/* Capture Button */}
-			<TouchableOpacity
-				style={[styles.button, { backgroundColor: "#4caf50" }]}
-				onPress={handleCapture}
-				disabled={isCapturing || !userId}
-			>
-				<Text style={styles.buttonText}>
-					{isCapturing ? "Capturing..." : "Capture"}
-				</Text>
-			</TouchableOpacity>
-
+			<Button title="Capture" onPress={handleCapture} disabled={isCapturing} />
+			<Toast />
 			{/* Loading Indicator */}
 			{isLoading && (
 				<ActivityIndicator
