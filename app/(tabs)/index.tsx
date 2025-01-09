@@ -8,9 +8,13 @@ import {
 	PermissionsAndroid,
 	Platform,
 	ActivityIndicator,
+	TouchableOpacity,
+	useColorScheme,
 } from "react-native";
 import { BleManager, Device } from "react-native-ble-plx";
 import { Buffer } from "buffer"; // Import Buffer
+import axios from "axios";
+import { Picker } from "@react-native-picker/picker";
 
 const manager = new BleManager();
 const ESP32_NAME = "ESP32_TEST";
@@ -20,10 +24,13 @@ const SERVICE_UUID = "4fafc201-1fb5-459e-8fcc-c5c9c331914b";
 const CHARACTERISTIC_UUID = "beb5483e-36e1-4688-b7f5-ea07361b26a8";
 
 export default function App() {
+	const [userId, setUserId] = useState<number | null>(null);
 	const [value, setValue] = useState("No value");
 	const [isConnected, setIsConnected] = useState(false);
 	const [isLoading, setIsLoading] = useState(false);
 	const [device, setDevice] = useState<Device | null>(null);
+	const scheme = useColorScheme();
+	const [isCapturing, setIsCapturing] = useState(false);
 
 	// Request permissions for Android 12+ (API 31+)
 	const requestPermissions = async () => {
@@ -201,15 +208,160 @@ export default function App() {
 		}
 	};
 
+	const handleCapture = () => {
+		if (!userId) {
+			alert("Please select a user before capturing.");
+			return;
+		}
+
+		setIsCapturing(true);
+
+		// Log details for now
+		console.log(`Capturing data for User ID: ${userId}`);
+		console.log(`Captured Value: ${value}`);
+
+		// Simulate the capturing process with a timeout
+		setTimeout(() => {
+			alert(`Data for User ${userId} captured successfully!`);
+			setIsCapturing(false);
+		}, 2000);
+	};
 	return (
-		<View style={styles.container}>
-			<Text style={styles.valueText}>Value: {value}</Text>
-			<Button
-				title={isConnected ? "Disconnect" : "Connect"}
+		// <View style={styles.container}>
+		// 	<Text style={styles.valueText}>Value: {value}</Text>
+		// 	<Button
+		// 		title={isConnected ? "Disconnect" : "Connect"}
+		// 		onPress={isConnected ? disconnect : scanAndConnect}
+		// 		disabled={isLoading}
+		// 	/>
+		// 	{isLoading && <ActivityIndicator size="large" color="#0000ff" />}
+		// 	<Picker
+		// 		selectedValue={userId}
+		// 		onValueChange={(itemValue: number | null) => setUserId(itemValue)}
+		// 		style={{ height: 50, width: 150 }}
+		// 	>
+		// 		<Picker.Item
+		// 			label="Select User"
+		// 			value={null}
+		// 			style={styles.container}
+		// 		/>
+		// 		<Picker.Item label="User 1" value={1} style={styles.valueText} />
+		// 		<Picker.Item label="User 2" value={2} style={styles.valueText} />
+		// 		<Picker.Item label="User 3" value={3} style={styles.valueText} />
+		// 		<Picker.Item label="User 4" value={4} style={styles.valueText} />
+		// 	</Picker>
+		// </View>
+		<View
+			style={[
+				styles.container,
+				{ backgroundColor: scheme === "dark" ? "#121212" : "#f0f4f8" },
+			]}
+		>
+			{/* Header */}
+			<Text
+				style={[
+					styles.headerText,
+					{ color: scheme === "dark" ? "#fff" : "#333" },
+				]}
+			>
+				Bluetooth BLE Connector
+			</Text>
+
+			{/* Status Card */}
+			<View
+				style={[
+					styles.statusCard,
+					{ backgroundColor: scheme === "dark" ? "#333" : "#fff" },
+				]}
+			>
+				<Text
+					style={[
+						styles.statusText,
+						{ color: scheme === "dark" ? "#fff" : "#333" },
+					]}
+				>
+					Status: {isConnected ? "Connected" : "Disconnected"}
+				</Text>
+				<Text
+					style={[
+						styles.valueText,
+						{ color: scheme === "dark" ? "#ddd" : "#555" },
+					]}
+				>
+					Value: {value}
+				</Text>
+			</View>
+
+			{/* User Picker */}
+			<View
+				style={[
+					styles.card,
+					{ backgroundColor: scheme === "dark" ? "#333" : "#fff" },
+				]}
+			>
+				<Text
+					style={[
+						styles.cardTitle,
+						{ color: scheme === "dark" ? "#fff" : "#333" },
+					]}
+				>
+					Select User
+				</Text>
+				<Picker
+					selectedValue={userId}
+					onValueChange={(itemValue: number | null) => setUserId(itemValue)}
+					style={[
+						styles.picker,
+						{ backgroundColor: scheme === "dark" ? "#555" : "#f9f9f9" },
+					]}
+				>
+					<Picker.Item label="Select User" value={null} />
+					<Picker.Item label="User 1" value={1} />
+					<Picker.Item label="User 2" value={2} />
+					<Picker.Item label="User 3" value={3} />
+					<Picker.Item label="User 4" value={4} />
+				</Picker>
+			</View>
+
+			{/* Connect/Disconnect Button */}
+			<TouchableOpacity
+				style={[
+					styles.button,
+					{
+						backgroundColor: isConnected
+							? scheme === "dark"
+								? "#e63946"
+								: "#ff4c4c"
+							: scheme === "dark"
+							? "#0077b6"
+							: "#0077b6",
+					},
+				]}
 				onPress={isConnected ? disconnect : scanAndConnect}
 				disabled={isLoading}
-			/>
-			{isLoading && <ActivityIndicator size="large" color="#0000ff" />}
+			>
+				<Text style={styles.buttonText}>
+					{isConnected ? "Disconnect" : "Connect"}
+				</Text>
+			</TouchableOpacity>
+			{/* Capture Button */}
+			<TouchableOpacity
+				style={[styles.button, { backgroundColor: "#4caf50" }]}
+				onPress={handleCapture}
+				disabled={isCapturing || !userId}
+			>
+				<Text style={styles.buttonText}>
+					{isCapturing ? "Capturing..." : "Capture"}
+				</Text>
+			</TouchableOpacity>
+
+			{/* Loading Indicator */}
+			{isLoading && (
+				<ActivityIndicator
+					size="large"
+					color={scheme === "dark" ? "#0077b6" : "#0077b6"}
+				/>
+			)}
 		</View>
 	);
 }
@@ -220,12 +372,54 @@ const styles = StyleSheet.create({
 		justifyContent: "center",
 		alignItems: "center",
 		padding: 20,
-		backgroundColor: "#f5f5f5",
+	},
+	headerText: {
+		fontSize: 24,
+		fontWeight: "bold",
+		marginBottom: 20,
+	},
+	statusCard: {
+		padding: 20,
+		borderRadius: 10,
+		marginBottom: 20,
+		width: "90%",
+		elevation: 5,
+		alignItems: "center",
+	},
+	statusText: {
+		fontSize: 18,
+		fontWeight: "bold",
+		marginBottom: 10,
 	},
 	valueText: {
-		fontSize: 18,
+		fontSize: 16,
+	},
+	card: {
+		padding: 20,
+		borderRadius: 10,
 		marginBottom: 20,
-		textAlign: "center",
-		color: "#333",
+		width: "90%",
+		elevation: 5,
+	},
+	cardTitle: {
+		fontSize: 18,
+		fontWeight: "bold",
+		marginBottom: 10,
+	},
+	picker: {
+		width: "100%",
+		borderRadius: 5,
+	},
+	button: {
+		padding: 15,
+		margin: 10,
+		borderRadius: 10,
+		width: "90%",
+		alignItems: "center",
+	},
+	buttonText: {
+		fontSize: 18,
+		color: "#fff",
+		fontWeight: "bold",
 	},
 });
