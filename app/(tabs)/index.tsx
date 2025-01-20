@@ -24,7 +24,7 @@ const ESP32_NAME = "ESP32_TEST";
 const SERVICE_UUID = "4fafc201-1fb5-459e-8fcc-c5c9c331914b";
 const CHARACTERISTIC_UUID = "beb5483e-36e1-4688-b7f5-ea07361b26a8";
 
-export default function App() {
+const App = () => {
 	const [userId, setUserId] = useState<number | null>(null);
 	const [value, setValue] = useState("No value");
 	const [isConnected, setIsConnected] = useState(false);
@@ -218,12 +218,12 @@ export default function App() {
 	};
 
 	const handleCapture = () => {
-		if (!userId) {
+		if (!userId || isNaN(Number(value))) {
 			Toast.show({
 				type: "error",
 				position: "top",
 				text1: "Error",
-				text2: "Please select a user before capturing.",
+				text2: "Please select a user before capturing or value is invalid",
 				visibilityTime: 2000,
 			});
 			return;
@@ -377,7 +377,7 @@ export default function App() {
 			)}
 		</View>
 	);
-}
+};
 
 const styles = StyleSheet.create({
 	container: {
@@ -436,3 +436,4 @@ const styles = StyleSheet.create({
 		fontWeight: "bold",
 	},
 });
+export default App;
