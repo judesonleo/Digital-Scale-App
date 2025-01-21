@@ -18,7 +18,7 @@ export default function LoginScreen() {
 				await saveAuthToken(token);
 				console.log("Login successful and token saved!");
 				console.log("Token:", token);
-				router.replace("/(tabs)");
+				router.replace("../(tabs)/home");
 			}
 		} catch (err: any) {
 			setError(err.response?.data?.message || "Login failed");
