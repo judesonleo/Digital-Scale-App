@@ -1,23 +1,42 @@
 import React, { useState } from "react";
-import { Button, TextInput, View, Text, StyleSheet } from "react-native";
+import {
+	Button,
+	TextInput,
+	View,
+	Text,
+	StyleSheet,
+	TouchableOpacity,
+} from "react-native";
 import api from "../../api";
-import { saveAuthToken } from "../../utils/authStorage";
+import { saveAuthToken, getAuthToken } from "../../utils/authStorage";
 import { router } from "expo-router";
 
 export default function LoginScreen() {
-	const [email, setEmail] = useState("");
+	const [emailOrUsername, setEmailOrUsername] = useState("");
 	const [password, setPassword] = useState("");
 	const [error, setError] = useState("");
 
 	const handleLogin = async () => {
 		try {
-			const response = await api.post("/api/auth/login", { email, password });
+			const response = await api.post("/api/auth/login", {
+				emailOrUsername,
+				password,
+			});
 			const token = response.data.token;
-
+			const userId = response.data.userId;
+			const username = response.data.username;
+			const name = response.data.name;
 			if (token) {
-				await saveAuthToken(token);
+				await saveAuthToken(token, userId, username, name);
 				console.log("Login successful and token saved!");
-				console.log("Token:", token);
+				// console.log("Token:", token);
+				// console.log("UserId", response.data.userId);
+				// console.log("UserName", response.data.username);
+				const userDetails = await getAuthToken();
+				console.log("token", userDetails?.token);
+				console.log("userId", userDetails?.userId);
+				console.log("username", userDetails?.username);
+				console.log("name", userDetails?.name);
 				router.replace("../(tabs)/home");
 			}
 		} catch (err: any) {
@@ -30,8 +49,8 @@ export default function LoginScreen() {
 			<Text>Login</Text>
 			<TextInput
 				placeholder="Email"
-				value={email}
-				onChangeText={setEmail}
+				value={emailOrUsername}
+				onChangeText={setEmailOrUsername}
 				style={styles.input}
 				autoCapitalize="none"
 			/>
@@ -44,6 +63,9 @@ export default function LoginScreen() {
 			/>
 			<Button title="Login" onPress={handleLogin} />
 			{error ? <Text>{error}</Text> : null}
+			<TouchableOpacity onPress={() => router.push("/register")}>
+				<Text style={styles.Text}>Sign Up</Text>
+			</TouchableOpacity>
 		</View>
 	);
 }
@@ -66,5 +88,9 @@ const styles = StyleSheet.create({
 		marginBottom: 20,
 		paddingHorizontal: 10,
 		color: "white",
+	},
+	Text: {
+		color: "pink",
+		fontSize: 20,
 	},
 });
