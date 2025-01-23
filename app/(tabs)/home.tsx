@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
 	View,
 	Text,
@@ -16,6 +16,9 @@ import { Buffer } from "buffer"; // Import Buffer
 import axios from "axios";
 import { Picker } from "@react-native-picker/picker";
 import Toast from "react-native-toast-message";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import api from "@/api";
+import { getAuthToken } from "@/utils/authStorage";
 
 const manager = new BleManager();
 const ESP32_NAME = "ESP32_TEST";
@@ -23,6 +26,17 @@ const ESP32_NAME = "ESP32_TEST";
 // UUIDs for your ESP32
 const SERVICE_UUID = "4fafc201-1fb5-459e-8fcc-c5c9c331914b";
 const CHARACTERISTIC_UUID = "beb5483e-36e1-4688-b7f5-ea07361b26a8";
+interface FamilyMember {
+	userId: {
+		_id: string;
+		name: string;
+	};
+	_id: string;
+}
+interface MainUser {
+	_id: string;
+	name: string;
+}
 
 const App = () => {
 	const [userId, setUserId] = useState<number | null>(null);
@@ -32,6 +46,8 @@ const App = () => {
 	const [device, setDevice] = useState<Device | null>(null);
 	const scheme = useColorScheme();
 	const [isCapturing, setIsCapturing] = useState(false);
+	const [familyMembers, setFamilyMembers] = useState<FamilyMember[]>([]);
+	const [mainUser, setMainUser] = useState<MainUser | null>(null);
 
 	// Request permissions for Android 12+ (API 31+)
 	const requestPermissions = async () => {
@@ -217,13 +233,27 @@ const App = () => {
 		}
 	};
 
-	const handleCapture = () => {
-		if (!userId || isNaN(Number(value))) {
+	const handleCapture = async () => {
+		// Validate user selection and value
+		if (!userId) {
 			Toast.show({
 				type: "error",
 				position: "top",
 				text1: "Error",
-				text2: "Please select a user before capturing or value is invalid",
+				text2: "Please select a user",
+				visibilityTime: 2000,
+			});
+			return;
+		}
+
+		// Validate weight value
+		const weightValue = parseFloat(value);
+		if (isNaN(weightValue)) {
+			Toast.show({
+				type: "error",
+				position: "top",
+				text1: "Error",
+				text2: "Invalid weight value",
 				visibilityTime: 2000,
 			});
 			return;
@@ -231,47 +261,70 @@ const App = () => {
 
 		setIsCapturing(true);
 
-		// Log details for now
-		console.log(`Capturing data for User ID: ${userId}`);
-		console.log(`Captured Value: ${value}`);
-
-		// Simulate the capturing process with a timeout
-		setTimeout(() => {
+		try {
+			// Send weight log to API
+			const response = await api.post("/api/weights", {
+				userId,
+				weight: weightValue,
+				notes: "", // Optional: add notes if needed
+			});
+			console.log("Weight log response:", response.data);
+			// Success toast
 			Toast.show({
 				type: "success",
 				position: "top",
-				text1: `Data Captured for User ${userId}`,
-				text2: `Value: ${value}`,
+				text1: "Weight Logged",
+				text2: `${weightValue} logged for user`,
 				visibilityTime: 2000,
 			});
+
+			// Reset capturing state
 			setIsCapturing(false);
-		}, 2000);
+		} catch (error) {
+			console.error("Error logging weight:", error);
+
+			// Error toast
+			Toast.show({
+				type: "error",
+				position: "top",
+				text1: "Logging Failed",
+				text2: "Could not log weight",
+				visibilityTime: 2000,
+			});
+
+			setIsCapturing(false);
+		}
 	};
+	// Fetch family members when component mounts
+	useEffect(() => {
+		const fetchFamilyAndUser = async () => {
+			try {
+				// Get user details using getAuthToken
+				const authInfo = await getAuthToken();
+				if (!authInfo || !authInfo.userId || !authInfo.name) {
+					Alert.alert("Please log in first");
+					return;
+				}
+
+				// Set main user
+				setMainUser({
+					_id: authInfo.userId.toString(),
+					name: authInfo.name,
+				});
+				console.log("Main user:", authInfo.userId, authInfo.name);
+				// Fetch family members
+				const response = await api.get(`/api/family/${authInfo.userId}`);
+				setFamilyMembers(response.data);
+			} catch (error) {
+				console.error("Error fetching family members:", error);
+				Alert.alert("Could not fetch family members");
+			}
+		};
+
+		fetchFamilyAndUser();
+	}, []);
+
 	return (
-		// <View style={styles.container}>
-		// 	<Text style={styles.valueText}>Value: {value}</Text>
-		// 	<Button
-		// 		title={isConnected ? "Disconnect" : "Connect"}
-		// 		onPress={isConnected ? disconnect : scanAndConnect}
-		// 		disabled={isLoading}
-		// 	/>
-		// 	{isLoading && <ActivityIndicator size="large" color="#0000ff" />}
-		// 	<Picker
-		// 		selectedValue={userId}
-		// 		onValueChange={(itemValue: number | null) => setUserId(itemValue)}
-		// 		style={{ height: 50, width: 150 }}
-		// 	>
-		// 		<Picker.Item
-		// 			label="Select User"
-		// 			value={null}
-		// 			style={styles.container}
-		// 		/>
-		// 		<Picker.Item label="User 1" value={1} style={styles.valueText} />
-		// 		<Picker.Item label="User 2" value={2} style={styles.valueText} />
-		// 		<Picker.Item label="User 3" value={3} style={styles.valueText} />
-		// 		<Picker.Item label="User 4" value={4} style={styles.valueText} />
-		// 	</Picker>
-		// </View>
 		<View
 			style={[
 				styles.container,
@@ -337,10 +390,16 @@ const App = () => {
 					]}
 				>
 					<Picker.Item label="Select User" value={null} />
-					<Picker.Item label="User 1" value={1} />
-					<Picker.Item label="User 2" value={2} />
-					<Picker.Item label="User 3" value={3} />
-					<Picker.Item label="User 4" value={4} />
+					{mainUser && (
+						<Picker.Item label={`${mainUser.name}`} value={mainUser._id} />
+					)}
+					{familyMembers.map((member) => (
+						<Picker.Item
+							key={member.userId._id}
+							label={member.userId.name}
+							value={member.userId._id}
+						/>
+					))}
 				</Picker>
 			</View>
 
