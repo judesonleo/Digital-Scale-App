@@ -10,6 +10,10 @@ import { useColorScheme } from "@/hooks/useColorScheme";
 
 export default function TabLayout() {
 	const colorScheme = useColorScheme();
+	// <Tabs.Screen
+	// 	name="index"
+	// 	options={{ tabBarItemStyle: { display: "none" }, headerShown: false }}
+	// />;
 
 	return (
 		<Tabs
@@ -34,6 +38,7 @@ export default function TabLayout() {
 					tabBarIcon: ({ color }) => (
 						<IconSymbol size={28} name="house.fill" color={color} />
 					),
+					headerShown: false,
 				}}
 			/>
 			<Tabs.Screen
@@ -56,6 +61,12 @@ export default function TabLayout() {
 							color={color}
 						/>
 					),
+				}}
+			/>
+			<Tabs.Screen
+				name="adduser"
+				options={{
+					tabBarItemStyle: { display: "none" },
 				}}
 			/>
 		</Tabs>

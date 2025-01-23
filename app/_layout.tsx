@@ -39,7 +39,7 @@ export default function RootLayout() {
 	return (
 		<ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
 			<StatusBar style="auto" />
-			<Stack>
+			<Stack screenOptions={{ headerShown: false }}>
 				{!user ? (
 					// Route to authentication screens when logged out.
 					<Stack.Screen name="(auth)" options={{ headerShown: false }} />
