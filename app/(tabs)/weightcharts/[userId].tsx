@@ -6,7 +6,7 @@ import {
 	StyleSheet,
 	ActivityIndicator,
 } from "react-native";
-import { LineChart } from "react-native-gifted-charts";
+import { BarChart } from "react-native-gifted-charts";
 import { format } from "date-fns";
 import api from "../../../api";
 import { useLocalSearchParams } from "expo-router";
@@ -20,7 +20,55 @@ interface WeightLog {
 interface UserData {
 	name: string;
 }
+const screenWidth = Dimensions.get("window").width;
 
+const customBackground = {
+	color: "#00000", // Light gray background
+	width: screenWidth, // Fill the entire width
+	height: 250, // Set custom height for the background
+	horizontalShift: 10, // Shift the background horizontally
+	verticalShift: 20, // Shift the background vertically
+};
+enum CurveType {
+	CUBIC,
+	QUADRATIC,
+}
+
+const lineConfig = {
+	initialSpacing: 10,
+	curved: true,
+	curvature: 0.5,
+	curveType: CurveType.CUBIC,
+	isAnimated: true,
+	delay: 300,
+	thickness: 2,
+	color: "blue",
+	hideDataPoints: false,
+	dataPointsShape: "circular",
+	dataPointsWidth: 6,
+	dataPointsHeight: 6,
+	dataPointsColor: "red",
+	dataPointsRadius: 3,
+	textColor: "black",
+	textFontSize: 12,
+	textShiftX: 5,
+	textShiftY: -10,
+	startIndex: 0,
+	endIndex: 5,
+	showArrow: true,
+	arrowConfig: {
+		length: 15,
+		width: 8,
+		strokeWidth: 2,
+		strokeColor: "blue",
+		fillColor: "transparent",
+		showArrowBase: true,
+	},
+	isSecondary: false,
+	focusEnabled: true,
+	focusedDataPointColor: "orange",
+	focusedDataPointRadius: 4,
+};
 const WeightChartScreen: React.FC = () => {
 	const [weightLogs, setWeightLogs] = useState<WeightLog[]>([]);
 	const [userData, setUserData] = useState<UserData | null>(null);
@@ -106,23 +154,51 @@ const WeightChartScreen: React.FC = () => {
 	return (
 		<View style={styles.container}>
 			<Text style={styles.title}>{userData?.name}'s Weight Chart</Text>
-			<LineChart
+			<BarChart
 				data={chartData}
 				width={screenWidth - 32}
 				height={300}
 				isAnimated
-				color="#4A90E2"
-				startFillColor="#D0E4FD"
-				endFillColor="#F3F8FE"
-				yAxisLabelTexts={[""]}
-				xAxisLabelTextStyle={{ color: "#888", fontSize: 12 }}
-				yAxisTextStyle={{ color: "#888", fontSize: 12 }}
-				initialSpacing={30}
-				showVerticalLines={false}
-				noOfSections={4}
-				rulesColor="#ddd"
-				rulesType="dashed"
-				areaChart
+				// color="#6C5CE7" // Color of bars
+				// backgroundColor="#D9C9FF" // Background color for bars
+				spacing={20} // Spacing between bars
+				showValuesAsTopLabel={false} // Show values as top labels on bars
+				parentWidth={screenWidth} // Adjust chart to parent width
+				maxValue={Math.max(...weightLogs.map((log) => log.weight))} // Set maximum Y-axis value
+				noOfSections={5} // Number of Y-axis sections
+				focusBarOnPress={true} // Focus on bar when pressed
+				lineBehindBars={true} // Show line behind bars
+				// sectionColors={["#D9C9FF"]} // Colors for Y-axis sections
+				// showLine={true} // Show line
+				customBackground={customBackground}
+				hideRules={true} // Hide rules
+				// isThreeD={true} // Enable 3D effect
+				cappedBars
+				lineConfig={lineConfig}
+				onPress={(item: { value: number; label: string }, index: number) =>
+					console.log("Bar pressed", item, index)
+				}
+				renderTooltip={(
+					item: {
+						value:
+							| string
+							| number
+							| boolean
+							| React.ReactElement<
+									any,
+									string | React.JSXElementConstructor<any>
+							  >
+							| Iterable<React.ReactNode>
+							| React.ReactPortal
+							| null
+							| undefined;
+					},
+					index: any
+				) => (
+					<View style={styles.tooltip}>
+						<Text style={styles.tooltipText}>{item.value} kg</Text>
+					</View>
+				)}
 			/>
 			<View style={styles.statsContainer}>
 				<View style={styles.statBox}>
@@ -158,61 +234,72 @@ const styles = StyleSheet.create({
 		flex: 1,
 		padding: 16,
 		paddingTop: 40,
-		backgroundColor: "#f8f9fa",
+		backgroundColor: "#f9f9f9",
 	},
 	centerContainer: {
 		flex: 1,
 		justifyContent: "center",
 		alignItems: "center",
-		backgroundColor: "#f8f9fa",
+		backgroundColor: "#f9f9f9",
 	},
 	title: {
-		fontSize: 22,
-		fontWeight: "600",
-		marginBottom: 20,
+		fontSize: 24,
+		fontWeight: "700",
+		marginBottom: 24,
 		textAlign: "center",
 		color: "#333",
 	},
 	statsContainer: {
 		flexDirection: "row",
 		justifyContent: "space-around",
-		marginTop: 20,
+		marginTop: 30,
 	},
 	statBox: {
 		backgroundColor: "#fff",
-		borderRadius: 10,
-		padding: 16,
-		elevation: 3,
+		borderRadius: 12,
+		padding: 20,
+		elevation: 5,
 		shadowColor: "#000",
 		shadowOpacity: 0.1,
-		shadowOffset: { width: 0, height: 3 },
-		shadowRadius: 5,
-		width: "30%",
+		shadowOffset: { width: 0, height: 4 },
+		shadowRadius: 6,
+		width: "28%",
 		alignItems: "center",
 	},
 	statLabel: {
 		color: "#555",
-		fontSize: 14,
-		marginBottom: 8,
+		fontSize: 16,
+		fontWeight: "600",
+		marginBottom: 10,
 		textAlign: "center",
 	},
 	statValue: {
-		fontSize: 16,
+		fontSize: 18,
 		fontWeight: "bold",
 		color: "#333",
 		textAlign: "center",
 	},
 	errorText: {
-		color: "red",
+		color: "#FF5733",
 		textAlign: "center",
-		fontSize: 16,
-		marginHorizontal: 16,
+		fontSize: 18,
+		marginHorizontal: 20,
 	},
 	noDataText: {
 		color: "#888",
 		textAlign: "center",
-		fontSize: 16,
-		marginHorizontal: 16,
+		fontSize: 18,
+		marginHorizontal: 20,
+	},
+	tooltip: {
+		position: "absolute",
+		backgroundColor: "#000",
+		padding: 10,
+		borderRadius: 8,
+	},
+	tooltipText: {
+		color: "#fff",
+		fontSize: 14,
 	},
 });
 
