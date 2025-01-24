@@ -57,12 +57,12 @@ const Settings = () => {
 			</View>
 			<View style={styles.form}>
 				<Button title="Add User" onPress={handleAddUser} />
-				<TouchableOpacity
+				{/* <TouchableOpacity
 					onPress={() => router.navigate("/adduser")}
 					style={styles.button}
 				>
 					<Text style={styles.Text}>Add user</Text>
-				</TouchableOpacity>
+				</TouchableOpacity> */}
 			</View>
 			<Button title="Logout" onPress={handleLogout} />
 		</View>

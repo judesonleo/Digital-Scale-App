@@ -1,109 +1,151 @@
-import { StyleSheet, Image, Platform } from 'react-native';
+import React, { useState, useEffect } from "react";
+import {
+	View,
+	Text,
+	FlatList,
+	TouchableOpacity,
+	StyleSheet,
+	Image,
+} from "react-native";
+import { Link } from "expo-router"; // Import Link from expo-router
+import api from "../../api";
+import { getAuthToken } from "../../utils/authStorage";
 
-import { Collapsible } from '@/components/Collapsible';
-import { ExternalLink } from '@/components/ExternalLink';
-import ParallaxScrollView from '@/components/ParallaxScrollView';
-import { ThemedText } from '@/components/ThemedText';
-import { ThemedView } from '@/components/ThemedView';
-import { IconSymbol } from '@/components/ui/IconSymbol';
-
-export default function TabTwoScreen() {
-  return (
-    <ParallaxScrollView
-      headerBackgroundColor={{ light: '#D0D0D0', dark: '#353636' }}
-      headerImage={
-        <IconSymbol
-          size={310}
-          color="#808080"
-          name="chevron.left.forwardslash.chevron.right"
-          style={styles.headerImage}
-        />
-      }>
-      <ThemedView style={styles.titleContainer}>
-        <ThemedText type="title">Explore</ThemedText>
-      </ThemedView>
-      <ThemedText>This app includes example code to help you get started.</ThemedText>
-      <Collapsible title="File-based routing">
-        <ThemedText>
-          This app has two screens:{' '}
-          <ThemedText type="defaultSemiBold">app/(tabs)/index.tsx</ThemedText> and{' '}
-          <ThemedText type="defaultSemiBold">app/(tabs)/explore.tsx</ThemedText>
-        </ThemedText>
-        <ThemedText>
-          The layout file in <ThemedText type="defaultSemiBold">app/(tabs)/_layout.tsx</ThemedText>{' '}
-          sets up the tab navigator.
-        </ThemedText>
-        <ExternalLink href="https://docs.expo.dev/router/introduction">
-          <ThemedText type="link">Learn more</ThemedText>
-        </ExternalLink>
-      </Collapsible>
-      <Collapsible title="Android, iOS, and web support">
-        <ThemedText>
-          You can open this project on Android, iOS, and the web. To open the web version, press{' '}
-          <ThemedText type="defaultSemiBold">w</ThemedText> in the terminal running this project.
-        </ThemedText>
-      </Collapsible>
-      <Collapsible title="Images">
-        <ThemedText>
-          For static images, you can use the <ThemedText type="defaultSemiBold">@2x</ThemedText> and{' '}
-          <ThemedText type="defaultSemiBold">@3x</ThemedText> suffixes to provide files for
-          different screen densities
-        </ThemedText>
-        <Image source={require('@/assets/images/react-logo.png')} style={{ alignSelf: 'center' }} />
-        <ExternalLink href="https://reactnative.dev/docs/images">
-          <ThemedText type="link">Learn more</ThemedText>
-        </ExternalLink>
-      </Collapsible>
-      <Collapsible title="Custom fonts">
-        <ThemedText>
-          Open <ThemedText type="defaultSemiBold">app/_layout.tsx</ThemedText> to see how to load{' '}
-          <ThemedText style={{ fontFamily: 'SpaceMono' }}>
-            custom fonts such as this one.
-          </ThemedText>
-        </ThemedText>
-        <ExternalLink href="https://docs.expo.dev/versions/latest/sdk/font">
-          <ThemedText type="link">Learn more</ThemedText>
-        </ExternalLink>
-      </Collapsible>
-      <Collapsible title="Light and dark mode components">
-        <ThemedText>
-          This template has light and dark mode support. The{' '}
-          <ThemedText type="defaultSemiBold">useColorScheme()</ThemedText> hook lets you inspect
-          what the user's current color scheme is, and so you can adjust UI colors accordingly.
-        </ThemedText>
-        <ExternalLink href="https://docs.expo.dev/develop/user-interface/color-themes/">
-          <ThemedText type="link">Learn more</ThemedText>
-        </ExternalLink>
-      </Collapsible>
-      <Collapsible title="Animations">
-        <ThemedText>
-          This template includes an example of an animated component. The{' '}
-          <ThemedText type="defaultSemiBold">components/HelloWave.tsx</ThemedText> component uses
-          the powerful <ThemedText type="defaultSemiBold">react-native-reanimated</ThemedText>{' '}
-          library to create a waving hand animation.
-        </ThemedText>
-        {Platform.select({
-          ios: (
-            <ThemedText>
-              The <ThemedText type="defaultSemiBold">components/ParallaxScrollView.tsx</ThemedText>{' '}
-              component provides a parallax effect for the header image.
-            </ThemedText>
-          ),
-        })}
-      </Collapsible>
-    </ParallaxScrollView>
-  );
+interface User {
+	id: string; // Unique identifier for the user
+	name: string;
+	username: string;
 }
 
+const UsersListScreen = () => {
+	const [users, setUsers] = useState<User[]>([]);
+	const [mainUser, setMainUser] = useState<User | null>(null);
+
+	useEffect(() => {
+		const fetchUsers = async () => {
+			try {
+				const authInfo = await getAuthToken();
+				console.log("Auth info:", authInfo);
+
+				if (!authInfo?.userId) {
+					console.log("No userId in auth info.");
+					return;
+				}
+
+				// Fetch main user details
+				const mainUserResponse = await api.get(`/api/users/${authInfo.userId}`);
+				console.log("Main user response:", mainUserResponse.data);
+
+				setMainUser({
+					id: mainUserResponse.data._id, // Using `_id` as the main user's `id`
+					name: mainUserResponse.data.name,
+					username: mainUserResponse.data.username,
+				});
+
+				// Fetch family members
+				const familyResponse = await api.get(`/api/family/${authInfo.userId}`);
+				console.log("Family response:", familyResponse.data);
+
+				const familyUsers = familyResponse.data.map((family: any) => ({
+					id: family.userId._id, // Using `id` from `userId`
+					name: family.userId.name,
+					username: family.username,
+				}));
+
+				console.log("Processed family users:", familyUsers);
+				setUsers(familyUsers);
+			} catch (error) {
+				console.error("Error fetching users:", error);
+			}
+		};
+
+		fetchUsers();
+	}, []);
+
+	const renderUserCard = ({ item }: { item: User }) => {
+		console.log("Rendering user card for:", item);
+
+		return (
+			<TouchableOpacity style={styles.card}>
+				<Image
+					source={{ uri: `https://ui-avatars.com/api/?name=${item.name}` }}
+					style={styles.avatar}
+				/>
+				<View style={styles.userInfo}>
+					<Text style={styles.userName}>{item.name}</Text>
+					<Text style={styles.username}>@{item.username}</Text>
+				</View>
+				{/* Use Link to navigate to the dynamic route */}
+				<Link
+					href={{
+						pathname: `/weightcharts/[userId]`,
+						params: { userId: item.id }, // Pass the dynamic user ID
+					}}
+				>
+					<Text style={styles.linkText}>View Weight Chart</Text>
+				</Link>
+			</TouchableOpacity>
+		);
+	};
+
+	return (
+		<View style={styles.container}>
+			<Text style={styles.title}>Family Members</Text>
+			<FlatList
+				data={mainUser ? [mainUser, ...users] : users}
+				renderItem={renderUserCard}
+				keyExtractor={(item) => item.id} // Ensure `id` is unique for each user
+			/>
+		</View>
+	);
+};
+
 const styles = StyleSheet.create({
-  headerImage: {
-    color: '#808080',
-    bottom: -90,
-    left: -35,
-    position: 'absolute',
-  },
-  titleContainer: {
-    flexDirection: 'row',
-    gap: 8,
-  },
+	container: {
+		flex: 1,
+		padding: 40,
+		backgroundColor: "#f4f4f4",
+	},
+	title: {
+		fontSize: 24,
+		fontWeight: "bold",
+		marginBottom: 16,
+	},
+	card: {
+		flexDirection: "row",
+		backgroundColor: "white",
+		padding: 16,
+		marginBottom: 12,
+		borderRadius: 8,
+		alignItems: "center",
+		shadowColor: "#000",
+		shadowOffset: { width: 0, height: 2 },
+		shadowOpacity: 0.1,
+		shadowRadius: 4,
+		elevation: 3,
+	},
+	avatar: {
+		width: 50,
+		height: 50,
+		borderRadius: 25,
+		marginRight: 16,
+	},
+	userInfo: {
+		flex: 1,
+	},
+	userName: {
+		fontSize: 18,
+		fontWeight: "bold",
+	},
+	username: {
+		color: "gray",
+		marginTop: 4,
+	},
+	linkText: {
+		color: "#6854D9", // Style for the link
+		fontWeight: "bold",
+		marginTop: 10,
+	},
 });
+
+export default UsersListScreen;

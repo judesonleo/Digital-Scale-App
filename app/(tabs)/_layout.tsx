@@ -69,6 +69,12 @@ export default function TabLayout() {
 					tabBarItemStyle: { display: "none" },
 				}}
 			/>
+			<Tabs.Screen
+				name="weightcharts/[userId]"
+				options={{
+					tabBarItemStyle: { display: "none" },
+				}}
+			/>
 		</Tabs>
 	);
 }

@@ -266,7 +266,7 @@ const App = () => {
 			const response = await api.post("/api/weights", {
 				userId,
 				weight: weightValue,
-				notes: "", // Optional: add notes if needed
+				notes: "",
 			});
 			console.log("Weight log response:", response.data);
 			// Success toast
@@ -311,7 +311,7 @@ const App = () => {
 					_id: authInfo.userId.toString(),
 					name: authInfo.name,
 				});
-				console.log("Main user:", authInfo.userId, authInfo.name);
+				// console.log("Main user:", authInfo.userId, authInfo.name);
 				// Fetch family members
 				const response = await api.get(`/api/family/${authInfo.userId}`);
 				setFamilyMembers(response.data);

@@ -33,10 +33,10 @@ export default function LoginScreen() {
 				// console.log("UserId", response.data.userId);
 				// console.log("UserName", response.data.username);
 				const userDetails = await getAuthToken();
-				console.log("token", userDetails?.token);
-				console.log("userId", userDetails?.userId);
-				console.log("username", userDetails?.username);
-				console.log("name", userDetails?.name);
+				// console.log("token", userDetails?.token);
+				// console.log("userId", userDetails?.userId);
+				// console.log("username", userDetails?.username);
+				// console.log("name", userDetails?.name);
 				router.replace("../(tabs)/home");
 			}
 		} catch (err: any) {
