@@ -6,7 +6,7 @@ import {
 	StyleSheet,
 	ActivityIndicator,
 } from "react-native";
-import { BarChart } from "react-native-gifted-charts";
+import { LineChart } from "react-native-gifted-charts"; // Change to LineChart
 import { format } from "date-fns";
 import api from "../../../api";
 import { useLocalSearchParams } from "expo-router";
@@ -20,6 +20,7 @@ interface WeightLog {
 interface UserData {
 	name: string;
 }
+
 const screenWidth = Dimensions.get("window").width;
 
 const customBackground = {
@@ -29,6 +30,7 @@ const customBackground = {
 	horizontalShift: 10, // Shift the background horizontally
 	verticalShift: 20, // Shift the background vertically
 };
+
 enum CurveType {
 	CUBIC,
 	QUADRATIC,
@@ -69,6 +71,7 @@ const lineConfig = {
 	focusedDataPointColor: "orange",
 	focusedDataPointRadius: 4,
 };
+
 const WeightChartScreen: React.FC = () => {
 	const [weightLogs, setWeightLogs] = useState<WeightLog[]>([]);
 	const [userData, setUserData] = useState<UserData | null>(null);
@@ -113,8 +116,6 @@ const WeightChartScreen: React.FC = () => {
 		fetchWeightData();
 	}, [userId]);
 
-	const screenWidth = Dimensions.get("window").width;
-
 	if (isLoading) {
 		return (
 			<View style={styles.centerContainer}>
@@ -154,29 +155,22 @@ const WeightChartScreen: React.FC = () => {
 	return (
 		<View style={styles.container}>
 			<Text style={styles.title}>{userData?.name}'s Weight Chart</Text>
-			<BarChart
+			<LineChart
 				data={chartData}
 				width={screenWidth - 32}
 				height={300}
 				isAnimated
-				// color="#6C5CE7" // Color of bars
-				// backgroundColor="#D9C9FF" // Background color for bars
-				spacing={20} // Spacing between bars
-				showValuesAsTopLabel={false} // Show values as top labels on bars
-				parentWidth={screenWidth} // Adjust chart to parent width
-				maxValue={Math.max(...weightLogs.map((log) => log.weight))} // Set maximum Y-axis value
-				noOfSections={5} // Number of Y-axis sections
-				focusBarOnPress={true} // Focus on bar when pressed
-				lineBehindBars={true} // Show line behind bars
-				// sectionColors={["#D9C9FF"]} // Colors for Y-axis sections
-				// showLine={true} // Show line
+				spacing={20}
+				// showValuesAsTopLabel={false}
+				maxValue={Math.max(...weightLogs.map((log) => log.weight))}
+				noOfSections={5}
+				// lineConfig={lineConfig}
+				focusEnabled={true}
 				customBackground={customBackground}
-				hideRules={true} // Hide rules
-				// isThreeD={true} // Enable 3D effect
-				cappedBars
-				lineConfig={lineConfig}
+				hideRules={true}
+				// lineBehindBars={true}
 				onPress={(item: { value: number; label: string }, index: number) =>
-					console.log("Bar pressed", item, index)
+					console.log("Line pressed", item, index)
 				}
 				renderTooltip={(
 					item: {
