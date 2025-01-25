@@ -42,7 +42,7 @@ export default function RootLayout() {
 			<Stack screenOptions={{ headerShown: false }}>
 				{!user ? (
 					// Route to authentication screens when logged out.
-					<Stack.Screen name="(auth)" options={{ headerShown: false }} />
+					<Stack.Screen name="(auth)/index" options={{ headerShown: false }} />
 				) : (
 					// Route to main tabs when logged in.
 					<Stack.Screen name="(tabs)" options={{ headerShown: false }} />

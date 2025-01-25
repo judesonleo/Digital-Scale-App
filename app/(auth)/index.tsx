@@ -1,96 +1,133 @@
 import React, { useState } from "react";
 import {
-	Button,
 	TextInput,
 	View,
 	Text,
 	StyleSheet,
 	TouchableOpacity,
+	ImageBackground,
+	ActivityIndicator,
+	KeyboardAvoidingView,
+	Platform,
 } from "react-native";
-import api from "../../api";
-import { saveAuthToken, getAuthToken } from "../../utils/authStorage";
+import { LinearGradient } from "expo-linear-gradient";
+import { BlurView } from "expo-blur";
 import { router } from "expo-router";
+import api from "../../api";
+import { saveAuthToken } from "../../utils/authStorage";
+import { COLORS, FONT_SIZES } from "../../styles/constants"; // Adjust the path based on your file structure
 
 export default function LoginScreen() {
 	const [emailOrUsername, setEmailOrUsername] = useState("");
 	const [password, setPassword] = useState("");
 	const [error, setError] = useState("");
+	const [loading, setLoading] = useState(false);
 
 	const handleLogin = async () => {
-		try {
-			const response = await api.post("/api/auth/login", {
-				emailOrUsername,
-				password,
-			});
-			const token = response.data.token;
-			const userId = response.data.userId;
-			const username = response.data.username;
-			const name = response.data.name;
-			if (token) {
-				await saveAuthToken(token, userId, username, name);
-				console.log("Login successful and token saved!");
-				// console.log("Token:", token);
-				// console.log("UserId", response.data.userId);
-				// console.log("UserName", response.data.username);
-				const userDetails = await getAuthToken();
-				// console.log("token", userDetails?.token);
-				// console.log("userId", userDetails?.userId);
-				// console.log("username", userDetails?.username);
-				// console.log("name", userDetails?.name);
-				router.replace("../(tabs)/home");
-			}
-		} catch (err: any) {
-			setError(err.response?.data?.message || "Login failed");
-		}
+		router.push("/login");
 	};
 
 	return (
-		<View style={styles.container}>
-			<Text>Login</Text>
-			<TextInput
-				placeholder="Email"
-				value={emailOrUsername}
-				onChangeText={setEmailOrUsername}
-				style={styles.input}
-				autoCapitalize="none"
-			/>
-			<TextInput
-				placeholder="Password"
-				value={password}
-				onChangeText={setPassword}
-				secureTextEntry
-				style={styles.input}
-			/>
-			<Button title="Login" onPress={handleLogin} />
-			{error ? <Text>{error}</Text> : null}
-			<TouchableOpacity onPress={() => router.push("/register")}>
-				<Text style={styles.Text}>Sign Up</Text>
-			</TouchableOpacity>
-		</View>
+		<ImageBackground
+			source={require("../../assets/images/login.jpg")}
+			style={styles.background}
+		>
+			<KeyboardAvoidingView
+				behavior={Platform.OS === "ios" ? "padding" : "height"}
+				style={styles.container}
+			>
+				<BlurView intensity={0} tint="dark" style={styles.blurContainer}>
+					<View style={styles.buttonsContainer}>
+						{loading ? (
+							<ActivityIndicator size="large" color="#fff" />
+						) : (
+							<TouchableOpacity onPress={handleLogin} style={styles.button}>
+								<LinearGradient
+									colors={[COLORS.white, COLORS.white]}
+									style={styles.gradient}
+								>
+									<Text style={[styles.buttonText, styles.primaryColor]}>
+										Login
+									</Text>
+								</LinearGradient>
+							</TouchableOpacity>
+						)}
+
+						<TouchableOpacity
+							onPress={() => router.push("/register")}
+							style={[styles.button]}
+						>
+							<LinearGradient
+								colors={[COLORS.primary, COLORS.primary]}
+								style={styles.gradient}
+							>
+								<Text style={[styles.buttonText, styles.whiteColor]}>
+									Sign Up
+								</Text>
+							</LinearGradient>
+						</TouchableOpacity>
+					</View>
+				</BlurView>
+			</KeyboardAvoidingView>
+		</ImageBackground>
 	);
 }
+
 const styles = StyleSheet.create({
+	background: {
+		flex: 1,
+		resizeMode: "cover",
+	},
 	container: {
+		flex: 1,
+		justifyContent: "center", // Center the content vertically
+		alignItems: "center",
+	},
+	blurContainer: {
+		flex: 1,
+		justifyContent: "flex-end", // Place form and buttons at the bottom
+		width: "100%",
+		padding: 20,
+		marginBottom: 50,
+	},
+
+	buttonsContainer: {
+		width: "100%",
+		alignItems: "center", // Center buttons horizontally
+	},
+	button: {
+		height: 55,
+		borderRadius: 70,
+		overflow: "hidden",
+		width: "100%",
+		margin: 5,
+	},
+	gradient: {
 		flex: 1,
 		justifyContent: "center",
 		alignItems: "center",
-		padding: 20,
 	},
-	headerText: {
-		fontSize: 24,
+	buttonText: {
+		// color: "white",
+		fontSize: 18,
 		fontWeight: "bold",
-		marginBottom: 20,
 	},
-	input: {
-		height: 40,
-		borderColor: "gray",
-		borderWidth: 1,
-		marginBottom: 20,
-		paddingHorizontal: 10,
-		color: "white",
+	errorText: {
+		color: "red",
+		marginBottom: 10,
+		textAlign: "center",
+		fontSize: 14,
 	},
-	Text: {
-		color: "pink",
-		fontSize: 20,
+	signUpText: {
+		color: "#ff7f50",
+		fontSize: 18,
+		textAlign: "center",
+		marginTop: 15,
+	},
+	primaryColor: {
+		color: COLORS.primary,
+	},
+	whiteColor: {
+		color: COLORS.white,
 	},
 });
