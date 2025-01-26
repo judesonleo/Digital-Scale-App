@@ -10,10 +10,8 @@ import {
 	KeyboardAvoidingView,
 	Platform,
 	FlatList,
-	Animated, // Import Animated for dynamic layout changes
 } from "react-native";
-import { Dropdown } from "react-native-element-dropdown";
-import DateTimePickerModal from "react-native-modal-datetime-picker";
+import DatePicker from "react-native-date-picker";
 import { LinearGradient } from "expo-linear-gradient";
 import { BlurView } from "expo-blur";
 import { router } from "expo-router";
@@ -30,18 +28,19 @@ const RegisterScreen = () => {
 	const [height, setHeight] = useState<string>("");
 	const [error, setError] = useState<string>("");
 	const [loading, setLoading] = useState<boolean>(false);
-	const [isDobPickerVisible, setDobPickerVisible] = useState<boolean>(false);
-	const [isGenderDropdownOpen, setGenderDropdownOpen] =
-		useState<boolean>(false);
-
-	// Manage the height of the dropdown expansion dynamically
-	const [dropdownHeight, setDropdownHeight] = useState(new Animated.Value(0)); // Animated height
+	const [open, setOpen] = useState(false);
+	const [date, setDate] = useState(new Date());
 
 	const genderOptions = [
 		{ label: "Male", value: "male" },
 		{ label: "Female", value: "female" },
 		{ label: "Other", value: "other" },
 	];
+
+	const handleDateConfirm = (selectedDate: Date) => {
+		setOpen(false);
+		setDate(selectedDate);
+	};
 
 	const handleRegister = async () => {
 		if (!name || !email || !username || !password || !height) {
@@ -50,7 +49,7 @@ const RegisterScreen = () => {
 		}
 
 		setLoading(true);
-		setError(""); // Clear previous errors
+		setError("");
 
 		try {
 			const { data } = await api.post("/api/auth/register", {
@@ -69,17 +68,14 @@ const RegisterScreen = () => {
 				setError("Registration failed. Please try again.");
 			}
 		} catch (err: any) {
-			if (err?.response?.data?.message) {
-				setError(err?.response?.data?.message);
-			} else {
-				setError("An error occurred during registration. Please try again.");
-			}
+			setError(
+				err?.response?.data?.message || "An error occurred. Please try again."
+			);
 		} finally {
 			setLoading(false);
 		}
 	};
 
-	// List of form items
 	const formItems = [
 		{ label: "Name", value: name, setter: setName, keyboardType: "default" },
 		{
@@ -126,26 +122,6 @@ const RegisterScreen = () => {
 		);
 	};
 
-	// Manage dropdown toggle and adjust height dynamically using Animated
-	const handleDropdownToggle = () => {
-		if (isGenderDropdownOpen) {
-			// Collapse the dropdown
-			Animated.timing(dropdownHeight, {
-				toValue: 0,
-				duration: 300,
-				useNativeDriver: false,
-			}).start();
-		} else {
-			// Expand the dropdown
-			Animated.timing(dropdownHeight, {
-				toValue: 150, // Adjust this value to the height of the expanded dropdown
-				duration: 300,
-				useNativeDriver: false,
-			}).start();
-		}
-		setGenderDropdownOpen(!isGenderDropdownOpen);
-	};
-
 	return (
 		<KeyboardAvoidingView
 			behavior={Platform.OS === "ios" ? "padding" : "height"}
@@ -158,48 +134,67 @@ const RegisterScreen = () => {
 				<BlurView intensity={40} tint="dark" style={styles.blurContainer}>
 					<Text style={styles.headerText}>Create Account</Text>
 
+					{error && <Text style={styles.errorText}>{error}</Text>}
+
 					<FlatList
 						data={formItems}
 						renderItem={renderItem}
 						keyExtractor={(item) => item.label}
 						contentContainerStyle={styles.scrollContainer}
-						showsVerticalScrollIndicator={false} // Hide scroll bar
+						showsVerticalScrollIndicator={false}
 						ListFooterComponent={
 							<>
-								{/* Gender dropdown */}
 								<Text style={styles.text}>Gender</Text>
-								<TouchableOpacity onPress={handleDropdownToggle}>
-									<Dropdown
-										style={styles.dropdown}
-										data={genderOptions}
-										labelField="label"
-										valueField="value"
-										placeholder="Select Gender"
-										placeholderStyle={styles.placeholderText}
-										selectedTextStyle={styles.selectedText}
-										value={gender}
-										onChange={(item) => setGender(item.value)}
-									/>
-								</TouchableOpacity>
+								<FlatList
+									data={genderOptions}
+									renderItem={({ item }) => (
+										<TouchableOpacity
+											style={[
+												styles.dropdown,
+												gender === item.value && {
+													borderColor: COLORS.primary,
+												},
+											]}
+											onPress={() => setGender(item.value)}
+										>
+											<Text
+												style={[
+													styles.selectedText,
+													gender === item.value && {
+														color: COLORS.secondary,
+													},
+												]}
+											>
+												{item.label}
+											</Text>
+										</TouchableOpacity>
+									)}
+									keyExtractor={(item) => item.value}
+								/>
 
-								{/* Animated dropdown space */}
-								<Animated.View style={{ height: dropdownHeight }}>
-									{/* This will expand and collapse dynamically */}
-								</Animated.View>
-
-								{/* DOB */}
 								<Text style={styles.text}>Date of Birth</Text>
 								<TouchableOpacity
-									onPress={() => setDobPickerVisible(true)}
+									onPress={() => setOpen(true)}
 									style={styles.dateButton}
 								>
-									<Text style={styles.dateText}>{dob.toDateString()}</Text>
+									<Text style={styles.dateText}>{date.toDateString()}</Text>
 								</TouchableOpacity>
+
+								<DatePicker
+									modal
+									mode="date"
+									open={open}
+									date={date}
+									onConfirm={handleDateConfirm}
+									onCancel={() => setOpen(false)}
+									minimumDate={new Date(1900, 0, 1)}
+									maximumDate={new Date()}
+									style={styles.datePicker}
+								/>
 							</>
 						}
 					/>
 
-					{/* Fixed buttons outside FlatList */}
 					<View style={styles.buttonsContainer}>
 						{loading ? (
 							<ActivityIndicator size="large" color={COLORS.primary} />
@@ -224,19 +219,6 @@ const RegisterScreen = () => {
 					</View>
 				</BlurView>
 			</ImageBackground>
-
-			<DateTimePickerModal
-				isVisible={isDobPickerVisible}
-				mode="date"
-				date={dob}
-				onConfirm={(date) => {
-					setDob(date);
-					setDobPickerVisible(false);
-				}}
-				onCancel={() => setDobPickerVisible(false)}
-				minimumDate={new Date(1900, 0, 1)}
-				maximumDate={new Date()}
-			/>
 		</KeyboardAvoidingView>
 	);
 };
@@ -269,7 +251,7 @@ const styles = StyleSheet.create({
 		paddingBottom: 20,
 	},
 	formItem: {
-		marginBottom: 5,
+		marginBottom: 15,
 	},
 	text: {
 		fontSize: FONT_SIZES.small,
@@ -294,23 +276,7 @@ const styles = StyleSheet.create({
 		justifyContent: "center",
 		marginBottom: 15,
 	},
-	placeholderText: {
-		fontSize: FONT_SIZES.small,
-		color: "rgba(255,255,255,0.7)",
-	},
 	selectedText: {
-		fontSize: FONT_SIZES.small,
-		color: COLORS.white,
-	},
-	dateButton: {
-		height: 50,
-		justifyContent: "center",
-		borderRadius: 10,
-		backgroundColor: COLORS.inputBackground,
-		paddingHorizontal: 15,
-		marginBottom: 15,
-	},
-	dateText: {
 		fontSize: FONT_SIZES.small,
 		color: COLORS.white,
 	},
@@ -339,6 +305,26 @@ const styles = StyleSheet.create({
 		color: COLORS.error,
 		textAlign: "center",
 		marginBottom: 10,
+	},
+	dateButton: {
+		height: 50,
+		justifyContent: "center",
+		borderRadius: 10,
+		backgroundColor: COLORS.inputBackground,
+		paddingHorizontal: 15,
+		marginBottom: 15,
+		alignItems: "center",
+	},
+	dateText: {
+		fontSize: FONT_SIZES.medium,
+		color: COLORS.white,
+	},
+	datePicker: {
+		backgroundColor: COLORS.inputBackground,
+		borderRadius: 10,
+		borderWidth: 1,
+		borderColor: "rgba(255,255,255,0.5)",
+		paddingHorizontal: 15,
 	},
 });
 

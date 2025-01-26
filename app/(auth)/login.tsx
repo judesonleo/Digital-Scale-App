@@ -161,6 +161,7 @@ const styles = StyleSheet.create({
 	buttonTextLink: {
 		fontSize: FONT_SIZES.small,
 		fontWeight: "bold",
+		textDecorationLine: "underline",
 	},
 	gradient: {
 		flex: 1,

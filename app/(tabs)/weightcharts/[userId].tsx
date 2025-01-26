@@ -6,7 +6,7 @@ import {
 	StyleSheet,
 	ActivityIndicator,
 } from "react-native";
-import { LineChart } from "react-native-gifted-charts"; // Change to LineChart
+import { LineChart } from "react-native-gifted-charts";
 import { format } from "date-fns";
 import api from "../../../api";
 import { useLocalSearchParams } from "expo-router";
@@ -116,6 +116,8 @@ const WeightChartScreen: React.FC = () => {
 		fetchWeightData();
 	}, [userId]);
 
+	const screenWidth = Dimensions.get("window").width;
+
 	if (isLoading) {
 		return (
 			<View style={styles.centerContainer}>
@@ -157,42 +159,21 @@ const WeightChartScreen: React.FC = () => {
 			<Text style={styles.title}>{userData?.name}'s Weight Chart</Text>
 			<LineChart
 				data={chartData}
-				width={screenWidth - 32}
+				width={screenWidth} // Adjust the width here to fit the labels
 				height={300}
 				isAnimated
-				spacing={20}
+				spacing={50} // Increased spacing for better label visibility
 				// showValuesAsTopLabel={false}
+				parentWidth={screenWidth}
 				maxValue={Math.max(...weightLogs.map((log) => log.weight))}
 				noOfSections={5}
 				// lineConfig={lineConfig}
-				focusEnabled={true}
 				customBackground={customBackground}
 				hideRules={true}
-				// lineBehindBars={true}
+				// cappedBars
 				onPress={(item: { value: number; label: string }, index: number) =>
-					console.log("Line pressed", item, index)
+					console.log("Line point pressed", item, index)
 				}
-				renderTooltip={(
-					item: {
-						value:
-							| string
-							| number
-							| boolean
-							| React.ReactElement<
-									any,
-									string | React.JSXElementConstructor<any>
-							  >
-							| Iterable<React.ReactNode>
-							| React.ReactPortal
-							| null
-							| undefined;
-					},
-					index: any
-				) => (
-					<View style={styles.tooltip}>
-						<Text style={styles.tooltipText}>{item.value} kg</Text>
-					</View>
-				)}
 			/>
 			<View style={styles.statsContainer}>
 				<View style={styles.statBox}>
