@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
 	TextInput,
 	View,
@@ -14,15 +14,24 @@ import { LinearGradient } from "expo-linear-gradient";
 import { BlurView } from "expo-blur";
 import { router } from "expo-router";
 import api from "../../api";
-import { saveAuthToken } from "../../utils/authStorage";
+import { saveAuthToken, getAuthToken } from "../../utils/authStorage";
 
 import { COLORS, FONT_SIZES } from "../../styles/constants";
+import { useAuth } from "@/hooks/useAuth";
 
 const LoginScreen = () => {
 	const [emailOrUsername, setEmailOrUsername] = useState<string>("");
 	const [password, setPassword] = useState<string>("");
 	const [error, setError] = useState<string>("");
 	const [loading, setLoading] = useState<boolean>(false);
+
+	const { user } = useAuth();
+
+	useEffect(() => {
+		if (user) {
+			router.replace("../(tabs)/home"); // Redirect to the home tab if authenticated
+		}
+	}, [user, loading]);
 
 	const handleLogin = async () => {
 		setLoading(true);
@@ -35,7 +44,7 @@ const LoginScreen = () => {
 			const { token, userId, username, name } = data;
 			if (token) {
 				await saveAuthToken(token, userId, username, name);
-				router.replace("../(tabs)/home");
+				router.replace("../(tabs)/home"); // Replace the login screen with the home screen
 			}
 		} catch (err: any) {
 			setError(err.response?.data?.message || "Something went wrong.");
@@ -98,7 +107,7 @@ const LoginScreen = () => {
 
 						<TouchableOpacity onPress={() => router.push("/register")}>
 							<Text style={[styles.buttonTextLink, styles.whiteColor]}>
-								Dont't have an Account? Sign Up
+								Don't have an Account? Sign Up
 							</Text>
 						</TouchableOpacity>
 					</View>
@@ -170,7 +179,6 @@ const styles = StyleSheet.create({
 		borderRadius: 10,
 	},
 	buttonText: {
-		// color: COLORS.white,
 		fontSize: FONT_SIZES.medium,
 		fontWeight: "bold",
 	},
@@ -187,21 +195,15 @@ const styles = StyleSheet.create({
 		textAlign: "center",
 		fontSize: FONT_SIZES.small,
 	},
-	signUpText: {
-		color: COLORS.primary,
-		fontSize: FONT_SIZES.medium,
-		textAlign: "center",
-		marginTop: 15,
-	},
-	text: {
-		color: COLORS.white,
+	forgot: {
+		color: COLORS.error,
 		fontSize: FONT_SIZES.small,
 		marginBottom: 10,
 		padding: 3,
 		textAlign: "left",
 	},
-	forgot: {
-		color: COLORS.error,
+	text: {
+		color: COLORS.white,
 		fontSize: FONT_SIZES.small,
 		marginBottom: 10,
 		padding: 3,

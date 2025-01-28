@@ -1,6 +1,6 @@
 import { View, StyleSheet } from "react-native";
 import { PlatformPressable } from "@react-navigation/elements";
-import React from "react";
+import React, { useEffect } from "react";
 import Animated, {
 	interpolate,
 	useAnimatedStyle,
@@ -30,6 +30,14 @@ const TabBarButton: React.FC<TabBarButtonProps> = ({
 }) => {
 	const scale = useSharedValue(isFocused ? 1 : 0);
 
+	// Update the scale value when isFocused changes
+	useEffect(() => {
+		scale.value = withSpring(isFocused ? 1 : 0, {
+			damping: 10,
+			stiffness: 100,
+		});
+	}, [isFocused, scale]);
+
 	const animatedIconStyle = useAnimatedStyle(() => {
 		const scaleValue = interpolate(scale.value, [0, 1], [1, 1.4]);
 		const top = interpolate(scale.value, [0, 1], [0, 9]);
@@ -46,11 +54,6 @@ const TabBarButton: React.FC<TabBarButtonProps> = ({
 		return {
 			opacity,
 		};
-	});
-
-	scale.value = withSpring(isFocused ? 1 : 0, {
-		damping: 10,
-		stiffness: 100,
 	});
 
 	return (

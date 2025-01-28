@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
 	TextInput,
 	View,
@@ -16,6 +16,7 @@ import { router } from "expo-router";
 import api from "../../api";
 import { saveAuthToken } from "../../utils/authStorage";
 import { COLORS, FONT_SIZES } from "../../styles/constants"; // Adjust the path based on your file structure
+import { useAuth } from "@/hooks/useAuth";
 
 export default function LoginScreen() {
 	const [emailOrUsername, setEmailOrUsername] = useState("");
@@ -26,6 +27,13 @@ export default function LoginScreen() {
 	const handleLogin = async () => {
 		router.push("/login");
 	};
+	const { user } = useAuth();
+
+	useEffect(() => {
+		if (user) {
+			router.replace("../(tabs)/home"); // Redirect to the home tab if authenticated
+		}
+	}, [user, loading]);
 
 	return (
 		<ImageBackground

@@ -1,5 +1,5 @@
-import { Tabs } from "expo-router";
-import React from "react";
+import { router, Tabs } from "expo-router";
+import React, { useEffect } from "react";
 import { Platform } from "react-native";
 
 import { HapticTab } from "@/components/HapticTab";
@@ -9,52 +9,56 @@ import { Colors } from "@/constants/Colors";
 import { useColorScheme } from "@/hooks/useColorScheme";
 import { TabBar } from "@/components/TabBar";
 import { lightMode, darkMode } from "../../styles/homeconstant";
+import { getAuthToken } from "@/utils/authStorage";
+
 export default function TabLayout() {
 	const colorScheme = useColorScheme();
+	useEffect(() => {
+		const checkAuthStatus = async () => {
+			const user = await getAuthToken();
+			if (user) {
+				// Clear the navigation stack and set the home screen as the main route
+				router.replace("../(tabs)/home"); // Direct to home if logged in
+			} else {
+				router.replace("/(auth)"); // Otherwise, show login screen
+			}
+		};
+
+		checkAuthStatus();
+	}, []);
+
 	return (
 		<Tabs tabBar={(props) => <TabBar {...props} />}>
 			<Tabs.Screen
 				name="home"
 				options={{
-					title: "Home",
-					tabBarIcon: ({ color }) => (
-						<IconSymbol size={28} name="house.fill" color={color} />
-					),
 					headerShown: false,
 				}}
 			/>
 			<Tabs.Screen
 				name="explore"
 				options={{
-					title: "Explore",
-					tabBarIcon: ({ color }) => (
-						<IconSymbol size={28} name="paperplane.fill" color={color} />
-					),
+					headerShown: false,
 				}}
 			/>
 			<Tabs.Screen
 				name="settings"
 				options={{
-					title: "Settings",
-					tabBarIcon: ({ color }) => (
-						<IconSymbol
-							size={28}
-							name="chevron.left.forwardslash.chevron.right"
-							color={color}
-						/>
-					),
+					headerShown: false,
 				}}
 			/>
 			<Tabs.Screen
 				name="adduser"
 				options={{
 					tabBarItemStyle: { display: "none" },
+					headerShown: false,
 				}}
 			/>
 			<Tabs.Screen
 				name="weightcharts/[userId]"
 				options={{
 					tabBarItemStyle: { display: "none" },
+					headerShown: false,
 				}}
 			/>
 		</Tabs>

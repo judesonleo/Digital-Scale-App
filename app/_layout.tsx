@@ -4,7 +4,7 @@ import {
 	ThemeProvider,
 } from "@react-navigation/native";
 import { useFonts } from "expo-font";
-import { Stack } from "expo-router";
+import { router, Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { StatusBar } from "expo-status-bar";
 import { useEffect } from "react";
@@ -42,7 +42,7 @@ export default function RootLayout() {
 			<Stack screenOptions={{ headerShown: false }}>
 				{!user ? (
 					// Route to authentication screens when logged out.
-					<Stack.Screen name="(auth)/index" options={{ headerShown: false }} />
+					<Stack.Screen name="(auth)" options={{ headerShown: false }} />
 				) : (
 					// Route to main tabs when logged in.
 					<Stack.Screen name="(tabs)" options={{ headerShown: false }} />

@@ -7,10 +7,9 @@ export const useAuth = () => {
 
 	useEffect(() => {
 		const checkAuth = async () => {
-			const token = await getAuthToken();
-			if (token) {
-				// Token exists: simulate user data (or fetch from API)
-				setUser({ token });
+			const authData = await getAuthToken(); // This returns { token, userId, username, name }
+			if (authData?.token) {
+				setUser(authData); // Store the whole object, not just the token
 			}
 			setLoading(false);
 		};
