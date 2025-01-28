@@ -1,0 +1,46 @@
+# Node.js dependencies
+
+node_modules/
+
+# Expo-generated directories after prebuild
+
+ios/
+android/
+
+# If you keep native directories but exclude intermediate files
+
+android/.gradle/
+android/app/build/
+ios/Pods/
+ios/build/
+
+# Logs and temporary files
+
+_.log
+_.tmp
+\*.temp
+
+# Cache and generated files
+
+.cache/
+dist/
+expo-build/
+
+# IDE and OS-specific files
+
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Environment files
+
+# Git files
+
+.git/
+.gitignore
+
+# Optional: Prevent upload of large assets or raw files
+
+assets/raw/
+assets/large_files/
