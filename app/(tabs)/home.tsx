@@ -356,6 +356,7 @@ const App = () => {
 						<Picker
 							selectedValue={userId}
 							onValueChange={(itemValue: number | null) => setUserId(itemValue)}
+							key={userId}
 							itemStyle={[
 								styles.iosPickerItem,
 								{ color: scheme === "dark" ? "#fff" : lightMode.white },

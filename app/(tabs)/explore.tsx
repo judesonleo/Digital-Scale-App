@@ -18,6 +18,11 @@ interface User {
 	name: string;
 	username: string;
 	relationship?: string; // Optional field for the user's relationship
+	gender?: string;
+	height?: number;
+	latestweight?: string;
+	dob?: string;
+	age?: string;
 }
 const theme = {
 	colors: {
@@ -108,6 +113,11 @@ const UsersListScreen = () => {
 					id: mainUserResponse.data._id, // Using `_id` as the main user's `id`
 					name: mainUserResponse.data.name,
 					username: mainUserResponse.data.username,
+					height: mainUserResponse.data.height,
+					gender: mainUserResponse.data.gender,
+					latestweight: mainUserResponse.data.latestWeight,
+					dob: mainUserResponse.data.dob,
+					age: mainUserResponse.data.age,
 				});
 
 				// Fetch family members
@@ -119,6 +129,11 @@ const UsersListScreen = () => {
 					name: family.name,
 					username: family.username,
 					relationship: family.relationship,
+					height: family.height,
+					age: family.age,
+					dob: family.dob,
+					latestweight: family.latestWeight,
+					gender: family.gender,
 				}));
 
 				console.log("Processed family users:", familyUsers);
@@ -150,9 +165,14 @@ const UsersListScreen = () => {
 					style={styles.avatar}
 				/>
 				<View style={styles.userInfo}>
-					<Text style={styles.userName}>{item.name}</Text>
 					<Text style={styles.userName}>@{item.username}</Text>
+					<Text style={styles.userName}>{item.name}</Text>
 					<Text style={styles.username}>{item.relationship}</Text>
+					<Text style={styles.username}>{item.age}</Text>
+					{/* <Text style={styles.username}>{item.dob}</Text> */}
+					<Text style={styles.username}>{item.gender}</Text>
+					<Text style={styles.username}>{item.height}</Text>
+					<Text style={styles.username}>{item.latestweight}</Text>
 				</View>
 				{/* Use Link to navigate to the dynamic route */}
 				<Link
@@ -206,7 +226,7 @@ const styles = StyleSheet.create({
 		backgroundColor: "white",
 		opacity: 90,
 
-		height: 150,
+		height: 250,
 		width: "100%",
 		padding: 20,
 		marginBottom: 12,
