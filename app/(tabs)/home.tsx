@@ -10,6 +10,10 @@ import {
 	ActivityIndicator,
 	TouchableOpacity,
 	useColorScheme,
+	RefreshControl,
+	ScrollView,
+	SafeAreaView,
+	Dimensions,
 } from "react-native";
 import { BleManager, Device } from "react-native-ble-plx";
 import { Buffer } from "buffer"; // Import Buffer
@@ -19,6 +23,7 @@ import Toast from "react-native-toast-message";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import api from "@/api";
 import { getAuthToken } from "@/utils/authStorage";
+import { darkMode, lightMode } from "@/styles/homeconstant";
 
 const manager = new BleManager();
 const ESP32_NAME = "ESP32_TEST";
@@ -48,6 +53,7 @@ const App = () => {
 	const [isCapturing, setIsCapturing] = useState(false);
 	const [familyMembers, setFamilyMembers] = useState<FamilyMember[]>([]);
 	const [mainUser, setMainUser] = useState<MainUser | null>(null);
+	const [refreshing, setRefreshing] = useState(false);
 
 	// Request permissions for Android 12+ (API 31+)
 	const requestPermissions = async () => {
@@ -296,203 +302,491 @@ const App = () => {
 		}
 	};
 	// Fetch family members when component mounts
-	useEffect(() => {
-		const fetchFamilyAndUser = async () => {
-			try {
-				// Get user details using getAuthToken
-				const authInfo = await getAuthToken();
-				if (!authInfo || !authInfo.userId || !authInfo.name) {
-					Alert.alert("Please log in first");
-					return;
-				}
-
-				// Set main user
-				setMainUser({
-					_id: authInfo.userId.toString(),
-					name: authInfo.name,
-				});
-				// console.log("Main user:", authInfo.userId, authInfo.name);
-				// Fetch family members
-				const response = await api.get(`/api/family/${authInfo.userId}`);
-				setFamilyMembers(response.data);
-			} catch (error) {
-				console.error("Error fetching family members:", error);
-				Alert.alert("Could not fetch family members");
+	const fetchFamilyAndUser = async () => {
+		try {
+			// Get user details using getAuthToken
+			const authInfo = await getAuthToken();
+			if (!authInfo || !authInfo.userId || !authInfo.name) {
+				Alert.alert("Please log in first");
+				return;
 			}
-		};
 
+			// Set main user
+			setMainUser({
+				_id: authInfo.userId.toString(),
+				name: authInfo.name,
+			});
+			// console.log("Main user:", authInfo.userId, authInfo.name);
+			// Fetch family members
+			const response = await api.get(`/api/family/${authInfo.userId}`);
+			setFamilyMembers(response.data);
+		} catch (error) {
+			console.error("Error fetching family members:", error);
+			Alert.alert("Could not fetch family members");
+		}
+	};
+	useEffect(() => {
 		fetchFamilyAndUser();
 	}, []);
 
+	const handleRefresh = async () => {
+		setRefreshing(true);
+		await fetchFamilyAndUser();
+		setRefreshing(false);
+	};
+	const renderPicker = () => {
+		if (Platform.OS === "ios") {
+			return (
+				<View
+					style={[
+						styles.pickerWrapper,
+						{
+							backgroundColor:
+								scheme === "dark" ? lightMode.black : lightMode.darkGreen,
+						},
+					]}
+				>
+					<View
+						style={[
+							styles.pickerContainer,
+							styles.iosPicker,
+							{ borderColor: scheme === "dark" ? "#444" : "#e0e0e0" },
+						]}
+					>
+						<Picker
+							selectedValue={userId}
+							onValueChange={(itemValue: number | null) => setUserId(itemValue)}
+							itemStyle={[
+								styles.iosPickerItem,
+								{ color: scheme === "dark" ? "#fff" : lightMode.white },
+							]}
+						>
+							<Picker.Item label="Select User" value={null} />
+							{mainUser && (
+								<Picker.Item label={mainUser.name} value={mainUser._id} />
+							)}
+							{familyMembers.map((member) => (
+								<Picker.Item
+									key={member.userId._id}
+									label={member.userId.name}
+									value={member.userId._id}
+								/>
+							))}
+						</Picker>
+					</View>
+				</View>
+			);
+		} else {
+			return (
+				<View
+					style={[
+						styles.pickerWrapper,
+						{
+							backgroundColor:
+								scheme === "dark" ? darkMode.background : lightMode.background,
+						},
+					]}
+				>
+					<View
+						style={[
+							styles.pickerContainer,
+							{ borderColor: scheme === "dark" ? "#444" : "#e0e0e0" },
+						]}
+					>
+						<Picker
+							selectedValue={userId}
+							onValueChange={(itemValue: number | null) => setUserId(itemValue)}
+							style={[
+								styles.picker,
+								styles.androidPicker,
+								{ color: scheme === "dark" ? "#fff" : "#333" },
+							]}
+							dropdownIconColor={scheme === "dark" ? "#fff" : "#333"}
+						>
+							<Picker.Item
+								label="Select User"
+								value={null}
+								style={styles.androidPickerItem}
+								color={scheme === "dark" ? "#fff" : "#333"}
+							/>
+							{mainUser && (
+								<Picker.Item
+									label={mainUser.name}
+									value={mainUser._id}
+									style={styles.androidPickerItem}
+									color={scheme === "dark" ? "#fff" : "#333"}
+								/>
+							)}
+							{familyMembers.map((member) => (
+								<Picker.Item
+									key={member.userId._id}
+									label={member.userId.name}
+									value={member.userId._id}
+									style={styles.androidPickerItem}
+									color={scheme === "dark" ? "#fff" : "#333"}
+								/>
+							))}
+						</Picker>
+					</View>
+				</View>
+			);
+		}
+	};
 	return (
-		<View
+		<SafeAreaView
 			style={[
-				styles.container,
-				{ backgroundColor: scheme === "dark" ? "#121212" : "#f0f4f8" },
+				styles.safeArea,
+				{
+					backgroundColor:
+						scheme === "dark" ? darkMode.background : lightMode.background,
+				},
 			]}
 		>
-			{/* Header */}
-			<Text
-				style={[
-					styles.headerText,
-					{ color: scheme === "dark" ? "#fff" : "#333" },
-				]}
-			>
-				Digital Scale
-			</Text>
+			<View style={styles.container}>
+				{/* Header */}
+				<View style={styles.header}>
+					<Text
+						style={[
+							styles.headerText,
+							{ color: scheme === "dark" ? "#fff" : "#333" },
+						]}
+					>
+						Digital Scale
+					</Text>
+					<Text
+						style={[
+							styles.subHeaderText,
+							{ color: scheme === "dark" ? "#aaa" : "#666" },
+						]}
+					>
+						Connect and measure weight
+					</Text>
+				</View>
 
-			{/* Status Card */}
-			<View
-				style={[
-					styles.statusCard,
-					{ backgroundColor: scheme === "dark" ? "#333" : "#fff" },
-				]}
-			>
-				<Text
-					style={[
-						styles.statusText,
-						{ color: scheme === "dark" ? "#fff" : "#333" },
-					]}
+				<ScrollView
+					contentContainerStyle={styles.scrollContent}
+					refreshControl={
+						<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
+					}
 				>
-					Status: {isConnected ? "Connected" : "Disconnected"}
-				</Text>
-				<Text
-					style={[
-						styles.valueText,
-						{ color: scheme === "dark" ? "#ddd" : "#555" },
-					]}
-				>
-					Value: {value}
-				</Text>
-			</View>
-
-			{/* User Picker */}
-			<View
-				style={[
-					styles.card,
-					{ backgroundColor: scheme === "dark" ? "#333" : "#fff" },
-				]}
-			>
-				<Text
-					style={[
-						styles.cardTitle,
-						{ color: scheme === "dark" ? "#fff" : "#333" },
-					]}
-				>
-					Select User
-				</Text>
-				<Picker
-					selectedValue={userId}
-					onValueChange={(itemValue: number | null) => setUserId(itemValue)}
-					style={[
-						styles.picker,
-						{ backgroundColor: scheme === "dark" ? "#555" : "#f9f9f9" },
-					]}
-				>
-					<Picker.Item label="Select User" value={null} />
-					{mainUser && (
-						<Picker.Item label={`${mainUser.name}`} value={mainUser._id} />
-					)}
-					{familyMembers.map((member) => (
-						<Picker.Item
-							key={member.userId._id}
-							label={member.userId.name}
-							value={member.userId._id}
+					{/* Connection Status */}
+					<View
+						style={[
+							styles.statusCard,
+							{
+								backgroundColor:
+									scheme === "dark" ? lightMode.black : lightMode.white,
+								borderColor:
+									scheme === "dark" ? lightMode.white : lightMode.black,
+							},
+						]}
+					>
+						<View
+							style={[
+								styles.statusIndicator,
+								{ backgroundColor: isConnected ? "#4CAF50" : "#FF5252" },
+							]}
 						/>
-					))}
-				</Picker>
-			</View>
+						<View style={styles.statusContent}>
+							<Text
+								style={[
+									styles.statusLabel,
+									{ color: scheme === "dark" ? "#fff" : "#333" },
+								]}
+							>
+								Connection Status
+							</Text>
+							<Text
+								style={[
+									styles.statusText,
+									{ color: scheme === "dark" ? "#aaa" : "#666" },
+								]}
+							>
+								{isConnected ? "Connected to ESP32" : "Disconnected"}
+							</Text>
+						</View>
+					</View>
 
-			{/* Connect/Disconnect Button */}
-			<TouchableOpacity
-				style={[
-					styles.button,
-					{
-						backgroundColor: isConnected
-							? scheme === "dark"
-								? "#e63946"
-								: "#ff4c4c"
-							: scheme === "dark"
-							? "#0077b6"
-							: "#0077b6",
-					},
-				]}
-				onPress={isConnected ? disconnect : scanAndConnect}
-				disabled={isLoading}
-			>
-				<Text style={styles.buttonText}>
-					{isConnected ? "Disconnect" : "Connect"}
-				</Text>
-			</TouchableOpacity>
-			{/* Capture Button */}
-			<Button title="Capture" onPress={handleCapture} disabled={isCapturing} />
+					{/* Weight Display */}
+					<View
+						style={[
+							styles.weightCard,
+							{
+								backgroundColor:
+									scheme === "dark" ? lightMode.black : lightMode.darkGreen,
+								borderColor:
+									scheme === "dark" ? lightMode.white : lightMode.text.primary,
+							},
+						]}
+					>
+						<Text
+							style={[
+								styles.weightLabel,
+								{
+									color:
+										scheme === "dark"
+											? lightMode.white
+											: lightMode.text.primary,
+								},
+							]}
+						>
+							Current Weight
+						</Text>
+						<Text
+							style={[
+								styles.weightValue,
+								{
+									color:
+										scheme === "dark"
+											? lightMode.text.primary
+											: lightMode.text.primary,
+								},
+							]}
+						>
+							{value !== "No value" ? `${value} kg` : "-- kg"}
+						</Text>
+					</View>
+
+					{/* User Selection Card with Integrated Buttons */}
+					<View
+						style={[
+							styles.userCard,
+							{
+								backgroundColor:
+									scheme === "dark" ? lightMode.black : lightMode.darkGreen,
+							},
+						]}
+					>
+						<Text
+							style={[
+								styles.cardTitle,
+								{
+									color: scheme === "dark" ? lightMode.white : lightMode.white,
+								},
+							]}
+						>
+							Select User
+						</Text>
+
+						{renderPicker()}
+
+						{/* Integrated Action Buttons */}
+						<View style={styles.cardButtons}>
+							<TouchableOpacity
+								style={[
+									styles.button,
+									styles.connectButton,
+									{
+										backgroundColor: isConnected
+											? lightMode.lightGreen
+											: lightMode.lightGreen,
+										opacity: isLoading ? 0.7 : 1,
+									},
+								]}
+								onPress={isConnected ? disconnect : scanAndConnect}
+								disabled={isLoading}
+							>
+								{isLoading ? (
+									<ActivityIndicator color="#fff" />
+								) : (
+									<Text style={styles.buttonText}>
+										{isConnected ? "Disconnect" : "Connect to Scale"}
+									</Text>
+								)}
+							</TouchableOpacity>
+
+							<TouchableOpacity
+								style={[
+									styles.button,
+									styles.captureButton,
+									{
+										backgroundColor:
+											scheme === "dark" ? lightMode.black : lightMode.darkGreen,
+										opacity: isCapturing || !isConnected ? 0.7 : 1,
+										borderColor: lightMode.white,
+										borderWidth: 2,
+									},
+								]}
+								onPress={handleCapture}
+								disabled={isCapturing || !isConnected}
+							>
+								{isCapturing ? (
+									<ActivityIndicator color="#fff" />
+								) : (
+									<Text style={styles.buttonText}>Capture Weight</Text>
+								)}
+							</TouchableOpacity>
+						</View>
+					</View>
+				</ScrollView>
+			</View>
 			<Toast />
-			{/* Loading Indicator */}
-			{isLoading && (
-				<ActivityIndicator
-					size="large"
-					color={scheme === "dark" ? "#0077b6" : "#0077b6"}
-				/>
-			)}
-		</View>
+		</SafeAreaView>
 	);
 };
 
 const styles = StyleSheet.create({
+	safeArea: {
+		flex: 1,
+	},
 	container: {
 		flex: 1,
-		justifyContent: "center",
+		padding: 16,
+	},
+	header: {
+		paddingVertical: 16,
 		alignItems: "center",
-		padding: 20,
 	},
 	headerText: {
-		fontSize: 24,
+		fontSize: 28,
 		fontWeight: "bold",
-		marginBottom: 20,
+		marginBottom: 8,
 	},
-	statusCard: {
-		padding: 20,
-		borderRadius: 10,
-		marginBottom: 20,
-		width: "90%",
-		elevation: 5,
-		alignItems: "center",
-	},
-	statusText: {
-		fontSize: 18,
-		fontWeight: "bold",
-		marginBottom: 10,
-	},
-	valueText: {
+	subHeaderText: {
 		fontSize: 16,
 	},
-	card: {
+	scrollContent: {
+		paddingBottom: 16,
+	},
+	statusCard: {
+		flexDirection: "row",
+		padding: 16,
+		boxShadow: "0px 2px 4px rgba(182, 202, 205, 0.5)",
+		// borderRadius: 12,
+		borderColor: lightMode.white,
+		borderWidth: 1,
+		marginBottom: 16,
+		borderRadius: 40,
+		backgroundColor: lightMode.black,
+		shadowColor: lightMode.white,
+		shadowOffset: {
+			width: 2,
+			height: 0.9,
+		},
+		// shadowRadius: 18,
+		// shadowOpacity: 0.9,
+		// elevation: 9,
+	},
+	statusIndicator: {
+		width: 12,
+		height: 12,
+		borderRadius: 6,
+		marginRight: 12,
+		marginTop: 4,
+		backgroundColor: "#FF5252",
+	},
+	statusContent: {
+		flex: 1,
+	},
+	statusLabel: {
+		fontSize: 16,
+		fontWeight: "600",
+		marginBottom: 4,
+	},
+	statusText: {
+		fontSize: 14,
+	},
+	weightCard: {
 		padding: 20,
-		borderRadius: 10,
-		marginBottom: 20,
-		width: "90%",
-		elevation: 5,
+		borderRadius: 12,
+		borderStyle: "solid",
+		marginBottom: 16,
+		alignItems: "center",
+		// shadowColor: "#000",
+		// shadowOffset: { width: 0, height: 2 },
+		shadowOpacity: 0.5,
+		shadowRadius: 1,
+		borderWidth: 1,
+		backgroundColor: lightMode.black,
+		shadowColor: lightMode.white,
+		shadowOffset: {
+			width: 2,
+			height: 0.9,
+		},
+		// elevation: 3,
+		boxShadow: "0px 2px 4px rgba(182, 202, 205, 0.1)",
+	},
+	weightLabel: {
+		fontSize: 16,
+		marginBottom: 8,
+	},
+	weightValue: {
+		fontSize: 36,
+		fontWeight: "bold",
+	},
+	userCard: {
+		padding: 20,
+		borderRadius: 22,
+		backgroundColor: lightMode.darkGreen,
+
+		shadowOpacity: 0.5,
 	},
 	cardTitle: {
 		fontSize: 18,
-		fontWeight: "bold",
-		marginBottom: 10,
+		fontWeight: "600",
+		marginBottom: 12,
+	},
+	pickerWrapper: {
+		borderRadius: 12,
+		overflow: "hidden",
+		marginBottom: 16,
+	},
+	pickerContainer: {
+		borderWidth: 0,
+		borderRadius: 12,
+		overflow: "hidden",
 	},
 	picker: {
+		height: 50,
 		width: "100%",
-		borderRadius: 5,
+	},
+	cardButtons: {
+		marginTop: 8,
 	},
 	button: {
-		padding: 15,
-		margin: 10,
-		borderRadius: 10,
-		width: "90%",
+		padding: 16,
+		borderRadius: 12,
 		alignItems: "center",
+		marginBottom: 12,
+		shadowColor: "#000",
+		shadowOffset: { width: 0, height: 2 },
+		shadowOpacity: 0.1,
+		shadowRadius: 4,
+		elevation: 3,
+	},
+	connectButton: {
+		marginBottom: 12,
+	},
+	captureButton: {
+		backgroundColor: "#2196F3",
 	},
 	buttonText: {
-		fontSize: 18,
-		color: "#fff",
-		fontWeight: "bold",
+		fontSize: 16,
+		fontWeight: "600",
+		color: lightMode.white,
+	},
+
+	// iOS specific styles
+	iosPicker: {
+		paddingHorizontal: 10,
+	},
+	iosPickerItem: {
+		fontSize: 16,
+		height: 120, // Taller height for iOS
+		textAlign: "left",
+	},
+	// Android specific styles
+	androidPickerItem: {
+		fontSize: 16,
+		fontFamily: Platform.select({
+			android: "Roboto",
+			default: undefined,
+		}),
+	},
+	androidPicker: {
+		height: 70,
+		paddingHorizontal: 10,
 	},
 });
+
 export default App;

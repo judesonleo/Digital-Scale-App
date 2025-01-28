@@ -6,20 +6,88 @@ import {
 	TouchableOpacity,
 	StyleSheet,
 	Image,
+	useColorScheme,
 } from "react-native";
 import { Link } from "expo-router"; // Import Link from expo-router
 import api from "../../api";
 import { getAuthToken } from "../../utils/authStorage";
+import { lightMode } from "@/styles/homeconstant";
 
 interface User {
 	id: string; // Unique identifier for the user
 	name: string;
 	username: string;
+	relationship?: string; // Optional field for the user's relationship
 }
+const theme = {
+	colors: {
+		// Brand colors
+		primary: "#6854D9",
+
+		// Background colors
+		backgroundLight: "#F5F7FA",
+		backgroundDark: "#0A0A0A",
+		cardLight: "#FFFFFF",
+		cardDark: "#1E2732",
+
+		// Text colors
+		textPrimaryLight: "#1A1A1A",
+		textPrimaryDark: "#FFFFFF",
+		textSecondary: "#666666",
+
+		// Button colors
+		buttonText: "#FFFFFF",
+	},
+
+	spacing: {
+		xs: 4,
+		sm: 8,
+		md: 16,
+		lg: 24,
+		xl: 32,
+		xxl: 48,
+	},
+
+	borderRadius: {
+		sm: 8,
+		md: 16,
+		circle: 9999,
+	},
+
+	typography: {
+		title: {
+			fontSize: 28,
+			fontWeight: "700",
+		},
+		cardTitle: {
+			fontSize: 17,
+			fontWeight: "600",
+		},
+		body: {
+			fontSize: 14,
+			fontWeight: "normal",
+		},
+		button: {
+			fontSize: 14,
+			fontWeight: "600",
+		},
+	},
+
+	shadows: {
+		card: {
+			shadowColor: "#000",
+			shadowOffset: { width: 0, height: 2 },
+			shadowOpacity: 0.1,
+			shadowRadius: 8,
+			elevation: 3,
+		},
+	},
+};
 
 const UsersListScreen = () => {
 	const [users, setUsers] = useState<User[]>([]);
 	const [mainUser, setMainUser] = useState<User | null>(null);
+	const scheme = useColorScheme();
 
 	useEffect(() => {
 		const fetchUsers = async () => {
@@ -47,9 +115,10 @@ const UsersListScreen = () => {
 				console.log("Family response:", familyResponse.data);
 
 				const familyUsers = familyResponse.data.map((family: any) => ({
-					id: family.userId._id, // Using `id` from `userId`
-					name: family.userId.name,
+					id: family.userId, // Using `id` from `userId`
+					name: family.name,
 					username: family.username,
+					relationship: family.relationship,
 				}));
 
 				console.log("Processed family users:", familyUsers);
@@ -64,16 +133,26 @@ const UsersListScreen = () => {
 
 	const renderUserCard = ({ item }: { item: User }) => {
 		console.log("Rendering user card for:", item);
+		const isDark = scheme === "dark";
 
 		return (
-			<TouchableOpacity style={styles.card}>
+			<TouchableOpacity
+				style={[
+					styles.card,
+					{
+						backgroundColor:
+							scheme === "dark" ? lightMode.darkGreen : lightMode.darkGreen,
+					},
+				]}
+			>
 				<Image
 					source={{ uri: `https://ui-avatars.com/api/?name=${item.name}` }}
 					style={styles.avatar}
 				/>
 				<View style={styles.userInfo}>
 					<Text style={styles.userName}>{item.name}</Text>
-					<Text style={styles.username}>@{item.username}</Text>
+					<Text style={styles.userName}>@{item.username}</Text>
+					<Text style={styles.username}>{item.relationship}</Text>
 				</View>
 				{/* Use Link to navigate to the dynamic route */}
 				<Link
@@ -89,12 +168,21 @@ const UsersListScreen = () => {
 	};
 
 	return (
-		<View style={styles.container}>
-			<Text style={styles.title}>Family Members</Text>
+		<View
+			style={[
+				styles.container,
+				{ backgroundColor: scheme === "dark" ? "#000" : "#fff" },
+			]}
+		>
+			<Text
+				style={[styles.title, { color: scheme === "dark" ? "#fff" : "#000" }]}
+			>
+				Family Members
+			</Text>
 			<FlatList
 				data={mainUser ? [mainUser, ...users] : users}
 				renderItem={renderUserCard}
-				keyExtractor={(item) => item.id} // Ensure `id` is unique for each user
+				keyExtractor={(item) => item.username} // Ensure `id` is unique for each user
 			/>
 		</View>
 	);
@@ -103,7 +191,9 @@ const UsersListScreen = () => {
 const styles = StyleSheet.create({
 	container: {
 		flex: 1,
-		padding: 40,
+		paddingTop: 50,
+		paddingHorizontal: 26,
+		marginBottom: 110,
 		backgroundColor: "#f4f4f4",
 	},
 	title: {
@@ -114,19 +204,27 @@ const styles = StyleSheet.create({
 	card: {
 		flexDirection: "row",
 		backgroundColor: "white",
-		padding: 16,
+		opacity: 90,
+
+		height: 150,
+		width: "100%",
+		padding: 20,
 		marginBottom: 12,
-		borderRadius: 8,
+		borderRadius: 30,
 		alignItems: "center",
 		shadowColor: "#000",
-		shadowOffset: { width: 0, height: 2 },
+		shadowOffset: { width: 0, height: 8 },
 		shadowOpacity: 0.1,
 		shadowRadius: 4,
-		elevation: 3,
+		boxShadow: "0px 2px 4px rgba(45, 147, 120, 0.1)",
+		// elevation: 3,
 	},
 	avatar: {
 		width: 50,
 		height: 50,
+		// textAlign: "center",
+		justifyContent: "flex-start",
+		alignItems: "flex-start",
 		borderRadius: 25,
 		marginRight: 16,
 	},
@@ -144,7 +242,8 @@ const styles = StyleSheet.create({
 	linkText: {
 		color: "#6854D9", // Style for the link
 		fontWeight: "bold",
-		marginTop: 10,
+		// marginTop: 90,
+		// marginLeft: 910,
 	},
 });
 
