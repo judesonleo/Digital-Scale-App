@@ -413,7 +413,7 @@ const App = () => {
 									backgroundColor:
 										scheme === "dark"
 											? darkMode.background
-											: lightMode.background,
+											: lightMode.background, //hi
 								},
 							]}
 							dropdownIconColor={
