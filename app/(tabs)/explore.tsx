@@ -7,6 +7,7 @@ import {
 	StyleSheet,
 	Image,
 	useColorScheme,
+	Alert,
 } from "react-native";
 import { Link } from "expo-router"; // Import Link from expo-router
 import api from "../../api";
@@ -94,7 +95,18 @@ const UsersListScreen = () => {
 	const [users, setUsers] = useState<User[]>([]);
 	const [mainUser, setMainUser] = useState<User | null>(null);
 	const scheme = useColorScheme();
+	const handleDeleteUser = async (userId: string) => {
+		try {
+			await api.delete(`/api/users/${userId}`);
 
+			setUsers((prevUsers) => prevUsers.filter((user) => user.id !== userId));
+
+			Alert.alert("Success", "User deleted successfully");
+		} catch (error) {
+			console.error("Error deleting user:", error);
+			Alert.alert("Error", "Failed to delete user");
+		}
+	};
 	useEffect(() => {
 		const fetchUsers = async () => {
 			try {
@@ -188,7 +200,7 @@ const UsersListScreen = () => {
 	// 	);
 	// };
 	const renderUserCard = ({ item, index }: { item: User; index: number }) => (
-		<UserCard user={item} index={index} />
+		<UserCard user={item} index={index} onDelete={handleDeleteUser} />
 	);
 
 	return (

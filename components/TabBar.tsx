@@ -63,6 +63,7 @@ export const TabBar = ({
 						"+not-found",
 						"adduser",
 						"weightcharts/[userId]",
+						"editUsers/[userId]",
 					].includes(route.name)
 				)
 					return null;

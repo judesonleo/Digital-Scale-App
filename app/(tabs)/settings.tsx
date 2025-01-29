@@ -36,13 +36,13 @@ const Settings = () => {
 			}
 		};
 
-		fetchAuthDetails(); // Trigger fetching auth data on component mount
+		fetchAuthDetails();
 	}, []);
 
 	const handleLogout = async () => {
-		await removeAuthToken(); // Clear token from AsyncStorage
+		await removeAuthToken();
 		console.log("User logged out and details removed");
-		router.replace("../(auth)"); // Redirect to login screen
+		router.replace("../(auth)");
 	};
 	const handleAddUser = async () => {
 		router.navigate("/adduser");
@@ -57,12 +57,6 @@ const Settings = () => {
 			</View>
 			<View style={styles.form}>
 				<Button title="Add User" onPress={handleAddUser} />
-				{/* <TouchableOpacity
-					onPress={() => router.navigate("/adduser")}
-					style={styles.button}
-				>
-					<Text style={styles.Text}>Add user</Text>
-				</TouchableOpacity> */}
 			</View>
 			<Button title="Logout" onPress={handleLogout} />
 		</View>

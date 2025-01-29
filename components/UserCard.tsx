@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
 	View,
 	Text,
@@ -7,8 +7,13 @@ import {
 	StyleSheet,
 	Animated,
 	useColorScheme,
+	Alert,
+	Modal,
 } from "react-native";
-import { Link } from "expo-router";
+import { Link, router } from "expo-router";
+import { Entypo } from "@expo/vector-icons";
+import { Colors } from "@/constants/Colors";
+import { BlurView } from "expo-blur";
 
 // Enhanced design tokens
 const DESIGN = {
@@ -99,9 +104,12 @@ interface User {
 interface UserCardProps {
 	user: User;
 	index: number;
+	onDelete: (userId: string) => Promise<void>;
 }
 
-const UserCard: React.FC<UserCardProps> = ({ user, index }) => {
+const UserCard: React.FC<UserCardProps> = ({ user, index, onDelete }) => {
+	const [showMenu, setShowMenu] = useState(false);
+	const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 	const scheme = useColorScheme();
 	const isDark = scheme === "dark";
 	const colors = isDark ? DESIGN.colors.text.dark : DESIGN.colors.text.light;
@@ -115,6 +123,14 @@ const UserCard: React.FC<UserCardProps> = ({ user, index }) => {
 	const scaleAnim = useRef(new Animated.Value(1)).current;
 	const translateYAnim = useRef(new Animated.Value(50)).current;
 	const opacityAnim = useRef(new Animated.Value(0)).current;
+	const handleDeleteConfirm = () => {
+		setShowDeleteConfirm(true);
+		setShowMenu(false);
+	};
+	const handleEditUser = () => {
+		setShowMenu(false);
+		router.navigate(`/editUsers/${user.id}`);
+	};
 
 	useEffect(() => {
 		Animated.parallel([
@@ -146,7 +162,17 @@ const UserCard: React.FC<UserCardProps> = ({ user, index }) => {
 			useNativeDriver: true,
 		}).start();
 	};
-
+	const handleDeleteUser = async () => {
+		try {
+			if (onDelete) {
+				await onDelete(user.id);
+				setShowDeleteConfirm(false);
+				setShowMenu(false);
+			}
+		} catch (error) {
+			Alert.alert("Error", "Failed to delete user");
+		}
+	};
 	const renderMetric = (value: number | undefined, unit: string) => {
 		if (!value) return null;
 		return (
@@ -192,6 +218,45 @@ const UserCard: React.FC<UserCardProps> = ({ user, index }) => {
 						<Text style={[styles.username, { color: colors.secondary }]}>
 							@{user.username}
 						</Text>
+					</View>
+					<TouchableOpacity
+						onPress={() => setShowMenu(!showMenu)}
+						style={styles.menuButton}
+					>
+						<Entypo
+							name="dots-three-vertical"
+							size={20}
+							color={colors.primary}
+						/>
+					</TouchableOpacity>
+					<View>
+						{showMenu && (
+							<View style={[styles.menu, { backgroundColor: colors.tertiary }]}>
+								<TouchableOpacity
+									style={styles.menuItem}
+									onPress={handleEditUser}
+								>
+									{/* <Link
+										href={{
+											pathname: `/editUsers/[userId]`,
+											params: { userId: user.id },
+										}}
+									> */}
+									<Text style={[styles.menuText, { color: colors.primary }]}>
+										Edit User
+									</Text>
+									{/* </Link> */}
+								</TouchableOpacity>
+								<TouchableOpacity
+									style={styles.menuItem}
+									onPress={handleDeleteConfirm}
+								>
+									<Text style={[styles.menuText, { color: "#FF4444" }]}>
+										Delete User
+									</Text>
+								</TouchableOpacity>
+							</View>
+						)}
 					</View>
 				</View>
 
@@ -251,6 +316,43 @@ const UserCard: React.FC<UserCardProps> = ({ user, index }) => {
 					</View>
 				</Link>
 			</TouchableOpacity>
+			<Modal visible={showDeleteConfirm} transparent animationType="fade">
+				<View style={styles.modalOverlay}>
+					<View
+						style={[
+							styles.modalContent,
+							{ backgroundColor: cardColors.background },
+						]}
+					>
+						<Text style={[styles.modalTitle, { color: colors.primary }]}>
+							Delete User
+						</Text>
+						<Text style={[styles.modalText, { color: colors.secondary }]}>
+							Are you sure you want to delete {user.name}?
+						</Text>
+						<View style={styles.modalButtons}>
+							<TouchableOpacity
+								style={[styles.modalButton, styles.cancelButton]}
+								onPress={() => setShowDeleteConfirm(false)}
+							>
+								<Text
+									style={[styles.modalButtonText, { color: colors.primary }]}
+								>
+									Cancel
+								</Text>
+							</TouchableOpacity>
+							<TouchableOpacity
+								style={[styles.modalButton, styles.deleteButton]}
+								onPress={handleDeleteUser}
+							>
+								<Text style={[styles.modalButtonText, { color: "#FFFFFF" }]}>
+									Delete
+								</Text>
+							</TouchableOpacity>
+						</View>
+					</View>
+				</View>
+			</Modal>
 		</Animated.View>
 	);
 };
@@ -307,6 +409,13 @@ const styles = StyleSheet.create({
 		borderWidth: 1,
 		marginVertical: DESIGN.spacing.sm,
 	},
+	fullScreenBlur: {
+		position: "absolute",
+		top: 0,
+		left: 0,
+		right: 0,
+		bottom: 0,
+	},
 	detailColumn: {
 		flex: 1,
 		alignItems: "center",
@@ -340,6 +449,88 @@ const styles = StyleSheet.create({
 		fontSize: DESIGN.typography.body,
 		fontWeight: "600",
 		color: "#FFFFFF",
+	},
+	menuButton: {
+		padding: DESIGN.spacing.sm,
+	},
+	menu: {
+		position: "absolute",
+		top: -10,
+		right: 25,
+		borderRadius: DESIGN.borderRadius.sm,
+		shadowColor: "#000",
+		shadowOffset: {
+			width: 0,
+			height: 2,
+		},
+		shadowOpacity: 0.25,
+		shadowRadius: 3.84,
+		elevation: 5,
+		borderWidth: 1,
+		borderColor: "rgba(0,0,0,0.1)",
+	},
+	menuItem: {
+		padding: DESIGN.spacing.sm,
+		// backgroundColor: "rgba(15, 9, 9,)", // Adjust opacity for better visibility
+
+		borderBottomWidth: 1,
+		borderBottomColor: "rgba(0,0,0,0.1)",
+		// backgroundColor: "black",
+		shadowColor: "#000",
+		shadowOffset: {
+			width: 0,
+			height: 2,
+		},
+	},
+	menuText: {
+		fontSize: DESIGN.typography.body,
+		fontWeight: "500",
+	},
+	modalOverlay: {
+		flex: 1,
+		backgroundColor: "rgba(0,0,0,0.5)",
+		justifyContent: "center",
+		alignItems: "center",
+	},
+	modalContent: {
+		width: "80%",
+		padding: DESIGN.spacing.xl,
+		borderRadius: DESIGN.borderRadius.lg,
+		alignItems: "center",
+	},
+	modalTitle: {
+		fontSize: DESIGN.typography.subtitle,
+		fontWeight: "600",
+		marginBottom: DESIGN.spacing.md,
+	},
+	modalText: {
+		fontSize: DESIGN.typography.body,
+		textAlign: "center",
+		marginBottom: DESIGN.spacing.lg,
+	},
+	modalButtons: {
+		flexDirection: "row",
+		justifyContent: "space-between",
+		width: "100%",
+	},
+	modalButton: {
+		paddingVertical: DESIGN.spacing.sm,
+		paddingHorizontal: DESIGN.spacing.lg,
+		borderRadius: DESIGN.borderRadius.sm,
+		minWidth: 100,
+		alignItems: "center",
+	},
+	cancelButton: {
+		backgroundColor: "transparent",
+		borderWidth: 1,
+		borderColor: "rgba(0,0,0,0.1)",
+	},
+	deleteButton: {
+		backgroundColor: "#FF4444",
+	},
+	modalButtonText: {
+		fontSize: DESIGN.typography.body,
+		fontWeight: "600",
 	},
 });
 
