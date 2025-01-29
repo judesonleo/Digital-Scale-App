@@ -48,6 +48,7 @@ const LoginScreen = () => {
 			}
 		} catch (err: any) {
 			setError(err.response?.data?.message || "Something went wrong.");
+			console.error(err);
 		} finally {
 			setLoading(false);
 		}

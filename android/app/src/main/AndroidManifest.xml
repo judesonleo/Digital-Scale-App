@@ -31,7 +31,7 @@
         <category android:name="android.intent.category.DEFAULT"/>
         <category android:name="android.intent.category.BROWSABLE"/>
         <data android:scheme="myapp"/>
-        <data android:scheme="com.anonymous.blereader"/>
+        <data android:scheme="com.judesonleo.digitalscale"/>
         <data android:scheme="exp+ble-reader"/>
       </intent-filter>
     </activity>

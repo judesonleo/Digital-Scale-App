@@ -15,6 +15,7 @@ import {
 	SafeAreaView,
 	Dimensions,
 } from "react-native";
+
 import { BleManager, Device } from "react-native-ble-plx";
 import { Buffer } from "buffer"; // Import Buffer
 import axios from "axios";
@@ -32,11 +33,8 @@ const ESP32_NAME = "ESP32_TEST";
 const SERVICE_UUID = "4fafc201-1fb5-459e-8fcc-c5c9c331914b";
 const CHARACTERISTIC_UUID = "beb5483e-36e1-4688-b7f5-ea07361b26a8";
 interface FamilyMember {
-	userId: {
-		_id: string;
-		name: string;
-	};
 	_id: string;
+	name: string;
 }
 interface MainUser {
 	_id: string;
@@ -316,10 +314,12 @@ const App = () => {
 				_id: authInfo.userId.toString(),
 				name: authInfo.name,
 			});
+			console.log("Main user:", authInfo.userId, authInfo.name);
 			// console.log("Main user:", authInfo.userId, authInfo.name);
 			// Fetch family members
 			const response = await api.get(`/api/family/${authInfo.userId}`);
 			setFamilyMembers(response.data);
+			console.log("Family members:", response);
 		} catch (error) {
 			console.error("Error fetching family members:", error);
 			Alert.alert("Could not fetch family members");
@@ -356,21 +356,29 @@ const App = () => {
 						<Picker
 							selectedValue={userId}
 							onValueChange={(itemValue: number | null) => setUserId(itemValue)}
-							key={userId}
+							// key={"98u98h989y8h78"}
 							itemStyle={[
 								styles.iosPickerItem,
 								{ color: scheme === "dark" ? "#fff" : lightMode.white },
 							]}
 						>
-							<Picker.Item label="Select User" value={null} />
+							<Picker.Item
+								label="Select User"
+								value={null}
+								// key={"89y8y9y98y8"}
+							/>
 							{mainUser && (
-								<Picker.Item label={mainUser.name} value={mainUser._id} />
+								<Picker.Item
+									label={mainUser.name}
+									value={mainUser._id}
+									key={mainUser._id}
+								/>
 							)}
 							{familyMembers.map((member) => (
 								<Picker.Item
-									key={member.userId._id}
-									label={member.userId.name}
-									value={member.userId._id}
+									key={member._id}
+									label={member.name}
+									value={member._id}
 								/>
 							))}
 						</Picker>
@@ -400,9 +408,17 @@ const App = () => {
 							style={[
 								styles.picker,
 								styles.androidPicker,
-								{ color: scheme === "dark" ? "#fff" : "#333" },
+								{
+									color: scheme === "dark" ? "#fff" : "#333",
+									backgroundColor:
+										scheme === "dark"
+											? darkMode.background
+											: lightMode.background,
+								},
 							]}
-							dropdownIconColor={scheme === "dark" ? "#fff" : "#333"}
+							dropdownIconColor={
+								scheme === "dark" ? lightMode.darkGreen : lightMode.darkGreen
+							}
 						>
 							<Picker.Item
 								label="Select User"
@@ -416,13 +432,14 @@ const App = () => {
 									value={mainUser._id}
 									style={styles.androidPickerItem}
 									color={scheme === "dark" ? "#fff" : "#333"}
+									key={mainUser._id}
 								/>
 							)}
 							{familyMembers.map((member) => (
 								<Picker.Item
-									key={member.userId._id}
-									label={member.userId.name}
-									value={member.userId._id}
+									key={member._id}
+									label={member.name}
+									value={member._id}
 									style={styles.androidPickerItem}
 									color={scheme === "dark" ? "#fff" : "#333"}
 								/>
@@ -657,7 +674,7 @@ const styles = StyleSheet.create({
 		borderColor: lightMode.white,
 		borderWidth: 1,
 		marginBottom: 16,
-		borderRadius: 40,
+		borderRadius: 12,
 		backgroundColor: lightMode.black,
 		shadowColor: lightMode.white,
 		shadowOffset: {

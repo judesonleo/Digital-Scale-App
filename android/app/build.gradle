@@ -86,9 +86,9 @@ android {
     buildToolsVersion rootProject.ext.buildToolsVersion
     compileSdk rootProject.ext.compileSdkVersion
 
-    namespace 'com.anonymous.blereader'
+    namespace 'com.judesonleo.digitalscale'
     defaultConfig {
-        applicationId 'com.anonymous.blereader'
+        applicationId 'com.judesonleo.digitalscale'
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 1
