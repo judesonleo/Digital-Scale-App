@@ -12,6 +12,7 @@ import { Link } from "expo-router"; // Import Link from expo-router
 import api from "../../api";
 import { getAuthToken } from "../../utils/authStorage";
 import { lightMode } from "@/styles/homeconstant";
+import UserCard from "@/components/UserCard";
 
 interface User {
 	id: string; // Unique identifier for the user
@@ -20,9 +21,9 @@ interface User {
 	relationship?: string; // Optional field for the user's relationship
 	gender?: string;
 	height?: number;
-	latestweight?: string;
+	latestweight?: number;
 	dob?: string;
-	age?: string;
+	age?: number;
 }
 const theme = {
 	colors: {
@@ -115,7 +116,7 @@ const UsersListScreen = () => {
 					username: mainUserResponse.data.username,
 					height: mainUserResponse.data.height,
 					gender: mainUserResponse.data.gender,
-					latestweight: mainUserResponse.data.latestWeight,
+					latestweight: parseFloat(mainUserResponse.data.latestWeight),
 					dob: mainUserResponse.data.dob,
 					age: mainUserResponse.data.age,
 				});
@@ -132,7 +133,7 @@ const UsersListScreen = () => {
 					height: family.height,
 					age: family.age,
 					dob: family.dob,
-					latestweight: family.latestWeight,
+					latestweight: parseFloat(family.latestWeight),
 					gender: family.gender,
 				}));
 
@@ -146,46 +147,49 @@ const UsersListScreen = () => {
 		fetchUsers();
 	}, []);
 
-	const renderUserCard = ({ item }: { item: User }) => {
-		console.log("Rendering user card for:", item);
-		const isDark = scheme === "dark";
+	// const renderUserCard = ({ item }: { item: User }) => {
+	// 	console.log("Rendering user card for:", item);
+	// 	const isDark = scheme === "dark";
 
-		return (
-			<TouchableOpacity
-				style={[
-					styles.card,
-					{
-						backgroundColor:
-							scheme === "dark" ? lightMode.darkGreen : lightMode.darkGreen,
-					},
-				]}
-			>
-				<Image
-					source={{ uri: `https://ui-avatars.com/api/?name=${item.name}` }}
-					style={styles.avatar}
-				/>
-				<View style={styles.userInfo}>
-					<Text style={styles.userName}>@{item.username}</Text>
-					<Text style={styles.userName}>{item.name}</Text>
-					<Text style={styles.username}>{item.relationship}</Text>
-					<Text style={styles.username}>{item.age}</Text>
-					{/* <Text style={styles.username}>{item.dob}</Text> */}
-					<Text style={styles.username}>{item.gender}</Text>
-					<Text style={styles.username}>{item.height}</Text>
-					<Text style={styles.username}>{item.latestweight}</Text>
-				</View>
-				{/* Use Link to navigate to the dynamic route */}
-				<Link
-					href={{
-						pathname: `/weightcharts/[userId]`,
-						params: { userId: item.id }, // Pass the dynamic user ID
-					}}
-				>
-					<Text style={styles.linkText}>View Weight Chart</Text>
-				</Link>
-			</TouchableOpacity>
-		);
-	};
+	// 	return (
+	// 		<TouchableOpacity
+	// 			style={[
+	// 				styles.card,
+	// 				{
+	// 					backgroundColor:
+	// 						scheme === "dark" ? lightMode.darkGreen : lightMode.darkGreen,
+	// 				},
+	// 			]}
+	// 		>
+	// 			<Image
+	// 				source={{ uri: `https://ui-avatars.com/api/?name=${item.name}` }}
+	// 				style={styles.avatar}
+	// 			/>
+	// 			<View style={styles.userInfo}>
+	// 				<Text style={styles.userName}>@{item.username}</Text>
+	// 				<Text style={styles.userName}>{item.name}</Text>
+	// 				<Text style={styles.username}>{item.relationship}</Text>
+	// 				<Text style={styles.username}>{item.age}</Text>
+	// 				{/* <Text style={styles.username}>{item.dob}</Text> */}
+	// 				<Text style={styles.username}>{item.gender}</Text>
+	// 				<Text style={styles.username}>{item.height}</Text>
+	// 				<Text style={styles.username}>{item.latestweight}</Text>
+	// 			</View>
+	// 			{/* Use Link to navigate to the dynamic route */}
+	// 			<Link
+	// 				href={{
+	// 					pathname: `/weightcharts/[userId]`,
+	// 					params: { userId: item.id }, // Pass the dynamic user ID
+	// 				}}
+	// 			>
+	// 				<Text style={styles.linkText}>View Weight Chart</Text>
+	// 			</Link>
+	// 		</TouchableOpacity>
+	// 	);
+	// };
+	const renderUserCard = ({ item, index }: { item: User; index: number }) => (
+		<UserCard user={item} index={index} />
+	);
 
 	return (
 		<View

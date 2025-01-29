@@ -14,6 +14,8 @@ import {
 	ScrollView,
 	SafeAreaView,
 	Dimensions,
+	TextStyle,
+	ViewStyle,
 } from "react-native";
 
 import { BleManager, Device } from "react-native-ble-plx";
@@ -25,6 +27,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import api from "@/api";
 import { getAuthToken } from "@/utils/authStorage";
 import { darkMode, lightMode } from "@/styles/homeconstant";
+import { FontWeight } from "react-native-svg";
 
 const manager = new BleManager();
 const ESP32_NAME = "ESP32_TEST";
@@ -439,38 +442,27 @@ const App = () => {
 	};
 
 	const renderPicker = () => {
+		const pickerProps = {
+			selectedValue: userId,
+			onValueChange: (itemValue: number | null) => setUserId(itemValue),
+		};
 		if (Platform.OS === "ios") {
 			return (
 				<View
-					style={[
-						styles.pickerWrapper,
-						{
-							backgroundColor:
-								scheme === "dark" ? lightMode.black : lightMode.darkGreen,
-						},
-					]}
+					style={[styles.pickerWrapper, { backgroundColor: colors.surface }]}
 				>
 					<View
 						style={[
 							styles.pickerContainer,
 							styles.iosPicker,
-							{ borderColor: scheme === "dark" ? "#444" : "#e0e0e0" },
+							{ borderColor: colors.border },
 						]}
 					>
 						<Picker
-							selectedValue={userId}
-							onValueChange={(itemValue: number | null) => setUserId(itemValue)}
-							// key={"98u98h989y8h78"}
-							itemStyle={[
-								styles.iosPickerItem,
-								{ color: scheme === "dark" ? "#fff" : lightMode.white },
-							]}
+							{...pickerProps}
+							itemStyle={[styles.iosPickerItem, { color: colors.text.primary }]}
 						>
-							<Picker.Item
-								label="Select User"
-								value={null}
-								// key={"89y8y9y98y8"}
-							/>
+							<Picker.Item label="Select User" value={null} />
 							{mainUser && (
 								<Picker.Item
 									label={mainUser.name}
@@ -483,69 +475,6 @@ const App = () => {
 									key={member._id}
 									label={member.name}
 									value={member._id}
-								/>
-							))}
-						</Picker>
-					</View>
-				</View>
-			);
-		} else {
-			return (
-				<View
-					style={[
-						styles.pickerWrapper,
-						{
-							backgroundColor:
-								scheme === "dark" ? darkMode.background : lightMode.background,
-						},
-					]}
-				>
-					<View
-						style={[
-							styles.pickerContainer,
-							{ borderColor: scheme === "dark" ? "#444" : "#e0e0e0" },
-						]}
-					>
-						<Picker
-							selectedValue={userId}
-							onValueChange={(itemValue: number | null) => setUserId(itemValue)}
-							style={[
-								styles.picker,
-								styles.androidPicker,
-								{
-									color: scheme === "dark" ? "#fff" : "#333",
-									backgroundColor:
-										scheme === "dark"
-											? darkMode.background
-											: lightMode.background, //hi
-								},
-							]}
-							dropdownIconColor={
-								scheme === "dark" ? lightMode.darkGreen : lightMode.darkGreen
-							}
-						>
-							<Picker.Item
-								label="Select User"
-								value={null}
-								style={styles.androidPickerItem}
-								color={scheme === "dark" ? "#fff" : "#333"}
-							/>
-							{mainUser && (
-								<Picker.Item
-									label={mainUser.name}
-									value={mainUser._id}
-									style={styles.androidPickerItem}
-									color={scheme === "dark" ? "#fff" : "#333"}
-									key={mainUser._id}
-								/>
-							)}
-							{familyMembers.map((member) => (
-								<Picker.Item
-									key={member._id}
-									label={member.name}
-									value={member._id}
-									style={styles.androidPickerItem}
-									color={scheme === "dark" ? "#fff" : "#333"}
 								/>
 							))}
 						</Picker>
@@ -553,33 +482,58 @@ const App = () => {
 				</View>
 			);
 		}
+		return (
+			<View style={[styles.pickerWrapper, { backgroundColor: colors.surface }]}>
+				<View style={[styles.pickerContainer, { borderColor: colors.border }]}>
+					<Picker
+						{...pickerProps}
+						style={[
+							styles.picker,
+							styles.androidPicker,
+							{ color: colors.text.primary, backgroundColor: colors.surface },
+						]}
+						dropdownIconColor={colors.primary}
+					>
+						<Picker.Item
+							label="Select User"
+							value={null}
+							style={styles.androidPickerItem}
+							color={colors.text.primary}
+						/>
+						{mainUser && (
+							<Picker.Item
+								label={mainUser.name}
+								value={mainUser._id}
+								key={mainUser._id}
+								style={styles.androidPickerItem}
+								color={colors.text.primary}
+							/>
+						)}
+						{familyMembers.map((member) => (
+							<Picker.Item
+								key={member._id}
+								label={member.name}
+								value={member._id}
+								style={styles.androidPickerItem}
+								color={colors.text.primary}
+							/>
+						))}
+					</Picker>
+				</View>
+			</View>
+		);
 	};
 	return (
 		<SafeAreaView
-			style={[
-				styles.safeArea,
-				{
-					backgroundColor:
-						scheme === "dark" ? darkMode.background : lightMode.background,
-				},
-			]}
+			style={[styles.safeArea, { backgroundColor: colors.background }]}
 		>
 			<View style={styles.container}>
-				{/* Header */}
 				<View style={styles.header}>
-					<Text
-						style={[
-							styles.headerText,
-							{ color: scheme === "dark" ? "#fff" : "#333" },
-						]}
-					>
+					<Text style={[styles.headerText, { color: colors.text.primary }]}>
 						Digital Scale
 					</Text>
 					<Text
-						style={[
-							styles.subHeaderText,
-							{ color: scheme === "dark" ? "#aaa" : "#666" },
-						]}
+						style={[styles.subHeaderText, { color: colors.text.secondary }]}
 					>
 						Connect and measure weight
 					</Text>
@@ -591,117 +545,76 @@ const App = () => {
 						<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
 					}
 				>
-					{/* Connection Status */}
+					{/* Status Card */}
 					<View
 						style={[
+							styles.card,
 							styles.statusCard,
-							{
-								backgroundColor:
-									scheme === "dark" ? lightMode.black : lightMode.white,
-								borderColor:
-									scheme === "dark" ? lightMode.white : lightMode.black,
-							},
+							{ backgroundColor: colors.surface },
 						]}
 					>
 						<View
 							style={[
 								styles.statusIndicator,
-								{ backgroundColor: isConnected ? "#4CAF50" : "#FF5252" },
+								{
+									backgroundColor: isConnected
+										? DESIGN.colors.status.success
+										: DESIGN.colors.status.error,
+								},
 							]}
 						/>
 						<View style={styles.statusContent}>
 							<Text
-								style={[
-									styles.statusLabel,
-									{ color: scheme === "dark" ? "#fff" : "#333" },
-								]}
+								style={[styles.statusLabel, { color: colors.text.primary }]}
 							>
 								Connection Status
 							</Text>
 							<Text
-								style={[
-									styles.statusText,
-									{ color: scheme === "dark" ? "#aaa" : "#666" },
-								]}
+								style={[styles.statusText, { color: colors.text.secondary }]}
 							>
 								{isConnected ? "Connected to ESP32" : "Disconnected"}
 							</Text>
 						</View>
 					</View>
 
-					{/* Weight Display */}
+					{/* Weight Card */}
 					<View
 						style={[
+							styles.card,
 							styles.weightCard,
-							{
-								backgroundColor:
-									scheme === "dark" ? lightMode.black : lightMode.darkGreen,
-								borderColor:
-									scheme === "dark" ? lightMode.white : lightMode.text.primary,
-							},
+							{ backgroundColor: colors.surface },
 						]}
 					>
-						<Text
-							style={[
-								styles.weightLabel,
-								{
-									color:
-										scheme === "dark"
-											? lightMode.white
-											: lightMode.text.primary,
-								},
-							]}
-						>
+						<Text style={[styles.weightLabel, { color: colors.text.primary }]}>
 							Current Weight
 						</Text>
-						<Text
-							style={[
-								styles.weightValue,
-								{
-									color:
-										scheme === "dark"
-											? lightMode.text.primary
-											: lightMode.text.primary,
-								},
-							]}
-						>
+						<Text style={[styles.weightValue, { color: colors.primary }]}>
 							{value !== "No value" ? `${value} kg` : "-- kg"}
 						</Text>
 					</View>
 
-					{/* User Selection Card with Integrated Buttons */}
+					{/* User Selection Card */}
 					<View
 						style={[
+							styles.card,
 							styles.userCard,
-							{
-								backgroundColor:
-									scheme === "dark" ? lightMode.black : lightMode.darkGreen,
-							},
+							{ backgroundColor: colors.surface },
 						]}
 					>
-						<Text
-							style={[
-								styles.cardTitle,
-								{
-									color: scheme === "dark" ? lightMode.white : lightMode.white,
-								},
-							]}
-						>
+						<Text style={[styles.cardTitle, { color: colors.text.primary }]}>
 							Select User
 						</Text>
 
 						{renderPicker()}
 
-						{/* Integrated Action Buttons */}
 						<View style={styles.cardButtons}>
 							<TouchableOpacity
 								style={[
 									styles.button,
-									styles.connectButton,
 									{
 										backgroundColor: isConnected
-											? lightMode.lightGreen
-											: lightMode.lightGreen,
+											? DESIGN.colors.button.secondary
+											: DESIGN.colors.button.primary,
 										opacity: isLoading ? 0.7 : 1,
 									},
 								]}
@@ -719,23 +632,28 @@ const App = () => {
 
 							<TouchableOpacity
 								style={[
-									styles.button,
-									styles.captureButton,
+									styles.button as ViewStyle,
+									styles.secondaryButton as ViewStyle,
 									{
-										backgroundColor:
-											scheme === "dark" ? lightMode.black : lightMode.darkGreen,
+										backgroundColor: "transparent",
+										borderColor: colors.primary,
 										opacity: isCapturing || !isConnected ? 0.7 : 1,
-										borderColor: lightMode.white,
-										borderWidth: 2,
 									},
 								]}
 								onPress={handleCapture}
 								disabled={isCapturing || !isConnected}
 							>
 								{isCapturing ? (
-									<ActivityIndicator color="#fff" />
+									<ActivityIndicator color={colors.primary} />
 								) : (
-									<Text style={styles.buttonText}>Capture Weight</Text>
+									<Text
+										style={[
+											styles.buttonText as TextStyle,
+											{ color: colors.primary },
+										]}
+									>
+										Capture Weight
+									</Text>
 								)}
 							</TouchableOpacity>
 						</View>
@@ -753,162 +671,282 @@ const styles = StyleSheet.create({
 	},
 	container: {
 		flex: 1,
-		padding: 16,
+		padding: DESIGN.spacing.md,
 	},
 	header: {
-		paddingVertical: 16,
+		paddingVertical: DESIGN.spacing.md,
 		alignItems: "center",
+		borderBottomWidth: 1,
+		borderBottomColor: "rgba(0,0,0,0.1)",
+		marginBottom: DESIGN.spacing.md,
 	},
 	headerText: {
-		fontSize: 28,
-		fontWeight: "bold",
-		marginBottom: 8,
+		fontSize: DESIGN.typography.heading1.size,
+		fontWeight: parseInt(DESIGN.typography.heading1.weight, 10) as 700,
+		marginBottom: DESIGN.spacing.sm,
+		textAlign: "center",
 	},
 	subHeaderText: {
-		fontSize: 16,
-	},
+		fontSize: DESIGN.typography.body1.size,
+		textAlign: "center",
+		opacity: 0.8,
+	} as TextStyle,
 	scrollContent: {
-		paddingBottom: 16,
+		paddingBottom: DESIGN.spacing.md,
 	},
+	// Base card styles
+	card: {
+		borderRadius: DESIGN.borderRadius.lg,
+		marginBottom: DESIGN.spacing.md,
+		borderWidth: 1,
+		borderColor: "rgba(0,0,0,0.1)",
+		...Platform.select({
+			ios: {
+				shadowColor: "#000",
+				shadowOffset: { width: 0, height: 2 },
+				shadowOpacity: 0.1,
+				shadowRadius: 8,
+			},
+			android: {
+				elevation: 4,
+			},
+		}),
+	},
+	// Status card specific styles
 	statusCard: {
 		flexDirection: "row",
-		padding: 16,
-		boxShadow: "0px 2px 4px rgba(182, 202, 205, 0.5)",
-		// borderRadius: 12,
-		borderColor: lightMode.white,
+		padding: DESIGN.spacing.md,
 		borderWidth: 1,
-		marginBottom: 16,
-		borderRadius: 12,
-		backgroundColor: lightMode.black,
-		shadowColor: lightMode.white,
-		shadowOffset: {
-			width: 2,
-			height: 0.9,
-		},
-		// shadowRadius: 18,
-		// shadowOpacity: 0.9,
-		// elevation: 9,
+		borderRadius: DESIGN.borderRadius.lg,
+		...Platform.select({
+			ios: {
+				shadowColor: "#000",
+				shadowOffset: { width: 0, height: 1 },
+				shadowOpacity: 0.15,
+				shadowRadius: 6,
+			},
+			android: {
+				elevation: 3,
+			},
+		}),
 	},
 	statusIndicator: {
 		width: 12,
 		height: 12,
 		borderRadius: 6,
-		marginRight: 12,
+		marginRight: DESIGN.spacing.md,
 		marginTop: 4,
-		backgroundColor: "#FF5252",
+		borderWidth: 1,
+		borderColor: "rgba(0,0,0,0.1)",
 	},
 	statusContent: {
 		flex: 1,
 	},
 	statusLabel: {
-		fontSize: 16,
-		fontWeight: "600",
-		marginBottom: 4,
+		fontSize: DESIGN.typography.body1.size,
+		fontWeight: parseInt(DESIGN.typography.heading2.weight, 10) as 600,
+		marginBottom: DESIGN.spacing.xs,
 	},
 	statusText: {
-		fontSize: 14,
+		fontSize: DESIGN.typography.body2.size,
 	},
+	// Weight card specific styles
 	weightCard: {
-		padding: 20,
-		borderRadius: 12,
-		borderStyle: "solid",
-		marginBottom: 16,
+		padding: DESIGN.spacing.lg,
 		alignItems: "center",
-		// shadowColor: "#000",
-		// shadowOffset: { width: 0, height: 2 },
-		shadowOpacity: 0.5,
-		shadowRadius: 1,
-		borderWidth: 1,
-		backgroundColor: lightMode.black,
-		shadowColor: lightMode.white,
-		shadowOffset: {
-			width: 2,
-			height: 0.9,
-		},
-		// elevation: 3,
-		boxShadow: "0px 2px 4px rgba(182, 202, 205, 0.1)",
+		borderWidth: 2,
+		borderRadius: DESIGN.borderRadius.lg,
+		...Platform.select({
+			ios: {
+				shadowColor: "#000",
+				shadowOffset: { width: 0, height: 3 },
+				shadowOpacity: 0.2,
+				shadowRadius: 10,
+			},
+			android: {
+				elevation: 5,
+			},
+		}),
 	},
 	weightLabel: {
-		fontSize: 16,
-		marginBottom: 8,
+		fontSize: DESIGN.typography.body1.size,
+		marginBottom: DESIGN.spacing.sm,
+		fontWeight: "500",
 	},
 	weightValue: {
-		fontSize: 36,
-		fontWeight: "bold",
+		fontSize: DESIGN.typography.weight.size,
+		fontWeight: parseInt(
+			DESIGN.typography.weight.weight,
+			10
+		) as unknown as TextStyle["fontWeight"],
+		letterSpacing: 0.5,
 	},
+	// User card specific styles
 	userCard: {
-		padding: 20,
-		borderRadius: 22,
-		backgroundColor: lightMode.darkGreen,
-
-		shadowOpacity: 0.5,
+		padding: DESIGN.spacing.lg,
+		borderRadius: DESIGN.borderRadius.xl,
+		borderWidth: 1,
+		...Platform.select({
+			ios: {
+				shadowColor: "#000",
+				shadowOffset: { width: 0, height: 4 },
+				shadowOpacity: 0.15,
+				shadowRadius: 12,
+			},
+			android: {
+				elevation: 6,
+			},
+		}),
 	},
 	cardTitle: {
-		fontSize: 18,
-		fontWeight: "600",
-		marginBottom: 12,
+		fontSize: DESIGN.typography.heading2.size,
+		fontWeight: parseInt(DESIGN.typography.heading2.weight, 10) as 600,
+		marginBottom: DESIGN.spacing.md,
+		textAlign: "center",
 	},
+	// Picker styles
 	pickerWrapper: {
-		borderRadius: 12,
+		borderRadius: DESIGN.borderRadius.md,
 		overflow: "hidden",
-		marginBottom: 16,
-	},
+		marginBottom: DESIGN.spacing.md,
+		borderWidth: 1,
+	} as ViewStyle,
 	pickerContainer: {
-		borderWidth: 0,
-		borderRadius: 12,
+		borderWidth: 1,
+		borderRadius: DESIGN.borderRadius.md,
 		overflow: "hidden",
 	},
 	picker: {
 		height: 50,
 		width: "100%",
 	},
-	cardButtons: {
-		marginTop: 8,
-	},
-	button: {
-		padding: 16,
-		borderRadius: 12,
-		alignItems: "center",
-		marginBottom: 12,
-		shadowColor: "#000",
-		shadowOffset: { width: 0, height: 2 },
-		shadowOpacity: 0.1,
-		shadowRadius: 4,
-		elevation: 3,
-	},
-	connectButton: {
-		marginBottom: 12,
-	},
-	captureButton: {
-		backgroundColor: "#2196F3",
-	},
-	buttonText: {
-		fontSize: 16,
-		fontWeight: "600",
-		color: lightMode.white,
-	},
-
-	// iOS specific styles
 	iosPicker: {
-		paddingHorizontal: 10,
+		paddingHorizontal: DESIGN.spacing.sm,
 	},
 	iosPickerItem: {
-		fontSize: 16,
-		height: 120, // Taller height for iOS
-		textAlign: "left",
+		fontSize: DESIGN.typography.body1.size,
+		height: 120,
 	},
-	// Android specific styles
+	androidPicker: {
+		height: 50,
+		paddingHorizontal: DESIGN.spacing.sm,
+	},
 	androidPickerItem: {
-		fontSize: 16,
+		fontSize: DESIGN.typography.body1.size,
 		fontFamily: Platform.select({
 			android: "Roboto",
 			default: undefined,
 		}),
 	},
-	androidPicker: {
-		height: 70,
-		paddingHorizontal: 10,
+	// Button styles
+	cardButtons: {
+		marginTop: DESIGN.spacing.lg,
+		gap: DESIGN.spacing.md,
 	},
+	button: {
+		padding: DESIGN.spacing.md,
+		borderRadius: DESIGN.borderRadius.md,
+		alignItems: "center",
+		borderWidth: 1,
+		borderColor: "transparent",
+		...Platform.select({
+			ios: {
+				shadowColor: "#000",
+				shadowOffset: { width: 0, height: 2 },
+				shadowOpacity: 0.15,
+				shadowRadius: 8,
+			},
+			android: {
+				elevation: 3,
+			},
+		}),
+	},
+	secondaryButton: {
+		borderWidth: 2,
+		backgroundColor: "transparent",
+	} as ViewStyle,
+	buttonText: {
+		fontSize: DESIGN.typography.body1.size,
+		fontWeight: "600" as "600",
+		textAlign: "center" as "center",
+		letterSpacing: 0.5,
+	} as TextStyle,
+	// Input field styles (if needed)
+	input: {
+		borderWidth: 1,
+		borderRadius: DESIGN.borderRadius.sm,
+		padding: DESIGN.spacing.sm,
+		fontSize: DESIGN.typography.body1.size,
+		marginBottom: DESIGN.spacing.md,
+	},
+	// Loading state styles
+	loadingContainer: {
+		position: "absolute",
+		top: 0,
+		left: 0,
+		right: 0,
+		bottom: 0,
+		justifyContent: "center",
+		alignItems: "center",
+		backgroundColor: "rgba(0,0,0,0.3)",
+	},
+	// Error state styles
+	errorContainer: {
+		padding: DESIGN.spacing.md,
+		borderRadius: DESIGN.borderRadius.md,
+		borderWidth: 1,
+		borderColor: DESIGN.colors.status.error,
+		marginBottom: DESIGN.spacing.md,
+	},
+	errorText: {
+		color: DESIGN.colors.status.error,
+		fontSize: DESIGN.typography.body2.size,
+		textAlign: "center",
+	},
+	// Divider style
+	divider: {
+		height: 1,
+		width: "100%",
+		backgroundColor: "rgba(0,0,0,0.1)",
+		marginVertical: DESIGN.spacing.md,
+	},
+	// Badge style
+	badge: {
+		paddingHorizontal: DESIGN.spacing.sm,
+		paddingVertical: DESIGN.spacing.xs,
+		borderRadius: DESIGN.borderRadius.sm,
+		borderWidth: 1,
+		alignSelf: "flex-start",
+	},
+	badgeText: {
+		fontSize: DESIGN.typography.body2.size,
+		fontWeight: "500",
+	},
+	// Card header style
+	cardHeader: {
+		flexDirection: "row",
+		justifyContent: "space-between",
+		alignItems: "center",
+		paddingBottom: DESIGN.spacing.sm,
+		borderBottomWidth: 1,
+		marginBottom: DESIGN.spacing.md,
+	},
+	// Responsive padding for different screen sizes
+	contentPadding: {
+		padding: Platform.select({
+			ios: DESIGN.spacing.md,
+			android: DESIGN.spacing.sm,
+		}),
+	},
+	// Helper styles for spacing
+	mt1: { marginTop: DESIGN.spacing.xs },
+	mt2: { marginTop: DESIGN.spacing.sm },
+	mt3: { marginTop: DESIGN.spacing.md },
+	mt4: { marginTop: DESIGN.spacing.lg },
+	mb1: { marginBottom: DESIGN.spacing.xs },
+	mb2: { marginBottom: DESIGN.spacing.sm },
+	mb3: { marginBottom: DESIGN.spacing.md },
+	mb4: { marginBottom: DESIGN.spacing.lg },
 });
 
 export default App;
