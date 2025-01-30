@@ -91,6 +91,7 @@ const DESIGN = {
 // Types remain the same
 interface User {
 	id: string;
+	_id?: string;
 	name: string;
 	username: string;
 	relationship?: string;
@@ -119,17 +120,25 @@ const UserCard: React.FC<UserCardProps> = ({ user, index, onDelete }) => {
 	const statsColors = isDark
 		? DESIGN.colors.stats.dark
 		: DESIGN.colors.stats.light;
-
+	const userId = user.id || user._id;
 	const scaleAnim = useRef(new Animated.Value(1)).current;
 	const translateYAnim = useRef(new Animated.Value(50)).current;
 	const opacityAnim = useRef(new Animated.Value(0)).current;
 	const handleDeleteConfirm = () => {
+		if (!userId) {
+			Alert.alert("Error", "Invalid user ID");
+			return;
+		}
 		setShowDeleteConfirm(true);
 		setShowMenu(false);
 	};
 	const handleEditUser = () => {
+		if (!userId) {
+			Alert.alert("Error", "Invalid user ID");
+			return;
+		}
 		setShowMenu(false);
-		router.navigate(`/editUsers/${user.id}`);
+		router.navigate(`/editUsers/${userId}`);
 	};
 
 	useEffect(() => {
@@ -164,6 +173,9 @@ const UserCard: React.FC<UserCardProps> = ({ user, index, onDelete }) => {
 	};
 	const handleDeleteUser = async () => {
 		try {
+			if (!userId) {
+				throw new Error("Invalid user ID");
+			}
 			if (onDelete) {
 				await onDelete(user.id);
 				setShowDeleteConfirm(false);
@@ -300,7 +312,7 @@ const UserCard: React.FC<UserCardProps> = ({ user, index, onDelete }) => {
 				<Link
 					href={{
 						pathname: `/weightcharts/[userId]`,
-						params: { userId: user.id },
+						params: { userId: userId ?? "" },
 					}}
 					style={[
 						styles.link,

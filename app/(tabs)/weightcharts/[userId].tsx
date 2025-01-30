@@ -1,83 +1,76 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import {
 	View,
 	Text,
 	Dimensions,
 	StyleSheet,
 	ActivityIndicator,
+	Animated,
+	Platform,
+	ScrollView,
 } from "react-native";
 import { LineChart } from "react-native-gifted-charts";
 import { format } from "date-fns";
-import api from "../../../api";
 import { useLocalSearchParams } from "expo-router";
+import { useThemeColor } from "@/hooks/useThemeColor";
+import { MaterialCommunityIcons } from "@expo/vector-icons";
+import api from "../../../api";
 
 interface WeightLog {
-	timestamp: string;
+	_id: string;
+	userId: string;
 	weight: number;
-	formattedDate?: string;
+	notes: string;
+	timestamp: string;
+	__v: number;
 }
 
-interface UserData {
+interface UserDetails {
 	name: string;
+	height: number;
+	gender: string;
+	age: number;
+	relationship: string;
+}
+
+interface WeightResponse {
+	status: string;
+	latestWeight: number;
+	bmi: string;
+	recommendedWeightRange: {
+		minWeight: string;
+		maxWeight: string;
+	};
+	weightChangeRequired: string;
+	averageWeight10Days: string;
+	trend: "up" | "down" | "stable";
+	weightColor: string;
+	weightLogs: WeightLog[];
 }
 
 const screenWidth = Dimensions.get("window").width;
 
-const customBackground = {
-	color: "#00000", // Light gray background
-	width: screenWidth, // Fill the entire width
-	height: 250, // Set custom height for the background
-	horizontalShift: 10, // Shift the background horizontally
-	verticalShift: 20, // Shift the background vertically
-};
-
-enum CurveType {
-	CUBIC,
-	QUADRATIC,
-}
-
-const lineConfig = {
-	initialSpacing: 10,
-	curved: true,
-	curvature: 0.5,
-	curveType: CurveType.CUBIC,
-	isAnimated: true,
-	delay: 300,
-	thickness: 2,
-	color: "blue",
-	hideDataPoints: false,
-	dataPointsShape: "circular",
-	dataPointsWidth: 6,
-	dataPointsHeight: 6,
-	dataPointsColor: "red",
-	dataPointsRadius: 3,
-	textColor: "black",
-	textFontSize: 12,
-	textShiftX: 5,
-	textShiftY: -10,
-	startIndex: 0,
-	endIndex: 5,
-	showArrow: true,
-	arrowConfig: {
-		length: 15,
-		width: 8,
-		strokeWidth: 2,
-		strokeColor: "blue",
-		fillColor: "transparent",
-		showArrowBase: true,
-	},
-	isSecondary: false,
-	focusEnabled: true,
-	focusedDataPointColor: "orange",
-	focusedDataPointRadius: 4,
-};
-
 const WeightChartScreen: React.FC = () => {
-	const [weightLogs, setWeightLogs] = useState<WeightLog[]>([]);
-	const [userData, setUserData] = useState<UserData | null>(null);
+	const [weightData, setWeightData] = useState<WeightResponse | null>(null);
+	const [userDetails, setUserDetails] = useState<UserDetails | null>(null);
 	const [isLoading, setIsLoading] = useState(true);
 	const [error, setError] = useState<string | null>(null);
 	const { userId } = useLocalSearchParams();
+
+	// Theme colors
+	const backgroundColor = useThemeColor({}, "background");
+	const textColor = useThemeColor({}, "text");
+	const cardColor = useThemeColor({}, "card");
+	const primaryColor = useThemeColor({}, "primary");
+	const secondaryColor = useThemeColor({}, "secondary");
+	const borderColor = useThemeColor({}, "border");
+	const dangerColor = useThemeColor({}, "danger");
+	const successColor = useThemeColor({}, "success");
+	const warningColor = useThemeColor({}, "warning");
+
+	// Animation values
+	const fadeAnim = useState(new Animated.Value(0))[0];
+	const scaleAnim = useState(new Animated.Value(0))[0];
 
 	useEffect(() => {
 		if (!userId) {
@@ -85,196 +78,400 @@ const WeightChartScreen: React.FC = () => {
 			return;
 		}
 
-		const fetchWeightData = async () => {
+		const fetchData = async () => {
 			try {
 				setIsLoading(true);
-				const logsResponse = await api.get<WeightLog[]>(
-					`/api/weights/${userId}`
-				);
-				const sortedLogs = logsResponse.data
-					.sort(
-						(a, b) =>
-							new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
-					)
-					.map((log) => ({
-						...log,
-						formattedDate: format(new Date(log.timestamp), "MMM dd"),
-					}));
+				const [weightResponse, userResponse] = await Promise.all([
+					api.get<WeightResponse>(`/api/weights/${userId}`),
+					api.get<UserDetails>(`/api/users/${userId}`),
+				]);
 
-				setWeightLogs(sortedLogs);
+				setWeightData(weightResponse.data);
+				setUserDetails(userResponse.data);
 
-				const userResponse = await api.get<UserData>(`/api/users/${userId}`);
-				setUserData(userResponse.data);
+				Animated.parallel([
+					Animated.timing(fadeAnim, {
+						toValue: 1,
+						duration: 1000,
+						useNativeDriver: true,
+					}),
+					Animated.spring(scaleAnim, {
+						toValue: 1,
+						tension: 50,
+						friction: 7,
+						useNativeDriver: true,
+					}),
+				]).start();
 			} catch (error) {
-				console.error("Error fetching weight data:", error);
-				setError("Failed to load weight data");
+				console.error("Error fetching data:", error);
+				setError("Failed to load data");
 			} finally {
 				setIsLoading(false);
 			}
 		};
 
-		fetchWeightData();
+		fetchData();
 	}, [userId]);
 
-	const screenWidth = Dimensions.get("window").width;
+	const getHealthStatus = (bmi: number) => {
+		if (bmi < 18.5) return { text: "Underweight", color: warningColor };
+		if (bmi < 24.9) return { text: "Healthy", color: successColor };
+		if (bmi < 29.9) return { text: "Overweight", color: warningColor };
+		return { text: "Obese", color: dangerColor };
+	};
+
+	const formatWithEmoji = (
+		type: "weight" | "target" | "trend" | "bmi",
+		value: string
+	) => {
+		const emojis = {
+			weight: "⚖️",
+			target: "🎯",
+			trend: "📈",
+			bmi: "📊",
+		};
+		return `${emojis[type] || ""} ${value}`;
+	};
+
+	const chartData = useMemo(() => {
+		if (!weightData) return [];
+
+		return weightData.weightLogs
+			.sort(
+				(a, b) =>
+					new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
+			)
+			.map((log) => ({
+				value: log.weight,
+				label: format(new Date(log.timestamp), "MMM dd"),
+				dataPointText: log.weight.toString(),
+				note: log.notes,
+			}));
+	}, [weightData]);
 
 	if (isLoading) {
 		return (
-			<View style={styles.centerContainer}>
-				<ActivityIndicator size="large" color="#4A90E2" />
+			<View style={[styles.centerContainer, { backgroundColor }]}>
+				<ActivityIndicator size="large" color={primaryColor} />
 			</View>
 		);
 	}
 
-	if (error) {
+	if (error || !weightData) {
 		return (
-			<View style={styles.centerContainer}>
-				<Text style={styles.errorText}>{error}</Text>
+			<View style={[styles.centerContainer, { backgroundColor }]}>
+				<Text style={[styles.errorText, { color: textColor }]}>
+					{error || "No data available"}
+				</Text>
 			</View>
 		);
 	}
 
-	if (weightLogs.length === 0) {
-		return (
-			<View style={styles.centerContainer}>
-				<Text style={styles.noDataText}>No weight logs available</Text>
-			</View>
-		);
-	}
-
-	const stats = {
-		startWeight: weightLogs[0].weight,
-		currentWeight: weightLogs[weightLogs.length - 1].weight,
-		weightChange:
-			weightLogs[weightLogs.length - 1].weight - weightLogs[0].weight,
-	};
-
-	const chartData = weightLogs.map((log) => ({
-		value: log.weight,
-		label: log.formattedDate,
-	}));
+	const healthStatus = getHealthStatus(parseFloat(weightData.bmi));
 
 	return (
-		<View style={styles.container}>
-			<Text style={styles.title}>{userData?.name}'s Weight Chart</Text>
-			<LineChart
-				data={chartData}
-				width={screenWidth} // Adjust the width here to fit the labels
-				height={300}
-				isAnimated
-				spacing={50} // Increased spacing for better label visibility
-				// showValuesAsTopLabel={false}
-				parentWidth={screenWidth}
-				maxValue={Math.max(...weightLogs.map((log) => log.weight))}
-				noOfSections={5}
-				// lineConfig={lineConfig}
-				customBackground={customBackground}
-				hideRules={true}
-				// cappedBars
-				onPress={(item: { value: number; label: string }, index: number) =>
-					console.log("Line point pressed", item, index)
-				}
-			/>
-			<View style={styles.statsContainer}>
-				<View style={styles.statBox}>
-					<Text style={styles.statLabel}>Start Weight</Text>
-					<Text style={styles.statValue}>
-						{stats.startWeight.toFixed(1)} kg
+		<ScrollView
+			style={[styles.container, { backgroundColor }]}
+			showsVerticalScrollIndicator={false}
+		>
+			<Animated.View style={[styles.headerContainer, { opacity: fadeAnim }]}>
+				<View>
+					<Text style={[styles.title, { color: textColor }]}>
+						{userDetails?.name || "Weight"} Progress
+					</Text>
+					<Text style={[styles.subtitle, { color: textColor }]}>
+						{formatWithEmoji(
+							"weight",
+							`Current: ${weightData.latestWeight} kg`
+						)}
 					</Text>
 				</View>
-				<View style={styles.statBox}>
-					<Text style={styles.statLabel}>Current Weight</Text>
-					<Text style={styles.statValue}>
-						{stats.currentWeight.toFixed(1)} kg
-					</Text>
+				<MaterialCommunityIcons
+					name={
+						weightData.trend === "up"
+							? "trending-up"
+							: weightData.trend === "down"
+							? "trending-down"
+							: "trending-neutral"
+					}
+					size={24}
+					color={
+						weightData.trend === "up"
+							? dangerColor
+							: weightData.trend === "down"
+							? successColor
+							: primaryColor
+					}
+				/>
+			</Animated.View>
+
+			<Animated.View
+				style={[
+					styles.chartContainer,
+					{
+						backgroundColor: cardColor,
+						transform: [{ scale: scaleAnim }],
+					},
+				]}
+			>
+				<View style={styles.chartWrapper}>
+					<LineChart
+						data={chartData}
+						width={screenWidth - 60}
+						height={250}
+						spacing={50}
+						color={primaryColor}
+						thickness={2}
+						startFillColor={`${primaryColor}40`}
+						endFillColor={`${primaryColor}00`}
+						initialSpacing={20}
+						noOfSections={6}
+						yAxisColor={borderColor}
+						xAxisColor={borderColor}
+						yAxisTextStyle={{ color: textColor }}
+						xAxisLabelTextStyle={{ color: textColor }}
+						rulesColor={`${borderColor}40`}
+						rulesType="dashed"
+						yAxisTextNumberOfLines={1}
+						animateOnDataChange
+						animationDuration={1000}
+						textFontSize={12}
+						hideDataPoints={false}
+						dataPointsColor={primaryColor}
+						// showTooltipOnDataPoint={true}
+						focusEnabled
+						showStripOnFocus
+						curved
+						isAnimated
+						showDataPointLabelOnFocus
+					/>
 				</View>
-				<View style={styles.statBox}>
-					<Text style={styles.statLabel}>Change</Text>
-					<Text
+			</Animated.View>
+
+			<View style={styles.statsSection}>
+				<Text style={[styles.sectionTitle, { color: textColor }]}>
+					Health Insights
+				</Text>
+
+				<View style={styles.statsGrid}>
+					<Animated.View
 						style={[
-							styles.statValue,
-							{ color: stats.weightChange > 0 ? "red" : "green" },
+							styles.statCard,
+							{ backgroundColor: cardColor, opacity: fadeAnim },
 						]}
 					>
-						{stats.weightChange.toFixed(1)} kg
-					</Text>
+						<Text style={[styles.statLabel, { color: textColor }]}>
+							{formatWithEmoji("bmi", "BMI Status")}
+						</Text>
+						<Text style={[styles.statValue, { color: healthStatus.color }]}>
+							{weightData.bmi}
+						</Text>
+						<Text style={[styles.statSubtext, { color: healthStatus.color }]}>
+							{healthStatus.text}
+						</Text>
+					</Animated.View>
+
+					<Animated.View
+						style={[
+							styles.statCard,
+							{ backgroundColor: cardColor, opacity: fadeAnim },
+						]}
+					>
+						<Text style={[styles.statLabel, { color: textColor }]}>
+							{formatWithEmoji("target", "Target Range")}
+						</Text>
+						<Text style={[styles.statValue, { color: successColor }]}>
+							{weightData.recommendedWeightRange.minWeight} -{" "}
+							{weightData.recommendedWeightRange.maxWeight}
+						</Text>
+						<Text style={[styles.statSubtext, { color: textColor }]}>kg</Text>
+					</Animated.View>
+
+					<Animated.View
+						style={[
+							styles.statCard,
+							{ backgroundColor: cardColor, opacity: fadeAnim },
+						]}
+					>
+						<Text style={[styles.statLabel, { color: textColor }]}>
+							{formatWithEmoji("trend", "10-Day Trend")}
+						</Text>
+						<Text style={[styles.statValue, { color: primaryColor }]}>
+							{weightData.averageWeight10Days}
+						</Text>
+						<Text style={[styles.statSubtext, { color: textColor }]}>
+							kg avg
+						</Text>
+					</Animated.View>
 				</View>
+
+				<Animated.View
+					style={[
+						styles.goalCard,
+						{
+							backgroundColor: cardColor,
+							opacity: fadeAnim,
+							borderLeftWidth: 4,
+							marginBottom: 120,
+							borderLeftColor:
+								weightData.weightColor === "red" ? dangerColor : successColor,
+						},
+					]}
+				>
+					<Text style={[styles.goalLabel, { color: textColor }]}>
+						Weight Goal Status
+					</Text>
+					<Text
+						style={[
+							styles.goalValue,
+							{
+								color:
+									weightData.weightColor === "red" ? dangerColor : successColor,
+							},
+						]}
+					>
+						{weightData.weightChangeRequired}
+					</Text>
+					<Text style={[styles.goalSubtext, { color: textColor }]}>
+						{weightData.trend === "down"
+							? "Keep going! You're on track!"
+							: "Stay motivated! You can do it!"}
+					</Text>
+				</Animated.View>
 			</View>
-		</View>
+		</ScrollView>
 	);
 };
 
 const styles = StyleSheet.create({
 	container: {
 		flex: 1,
-		padding: 16,
-		paddingTop: 40,
-		backgroundColor: "#f9f9f9",
+		padding: 20,
 	},
 	centerContainer: {
 		flex: 1,
 		justifyContent: "center",
 		alignItems: "center",
-		backgroundColor: "#f9f9f9",
+	},
+	headerContainer: {
+		flexDirection: "row",
+		alignItems: "center",
+		justifyContent: "space-between",
+		marginBottom: 20,
+		marginTop: Platform.OS === "ios" ? 40 : 20,
 	},
 	title: {
-		fontSize: 24,
+		fontSize: 28,
 		fontWeight: "700",
-		marginBottom: 24,
-		textAlign: "center",
-		color: "#333",
+		marginBottom: 4,
 	},
-	statsContainer: {
+	subtitle: {
+		fontSize: 16,
+		opacity: 0.8,
+	},
+	chartContainer: {
+		padding: 15,
+		borderRadius: 16,
+		marginBottom: 20,
+		overflow: "hidden",
+		...Platform.select({
+			ios: {
+				shadowColor: "#000",
+				shadowOffset: { width: 0, height: 2 },
+				shadowOpacity: 0.1,
+				shadowRadius: 8,
+			},
+			android: {
+				elevation: 4,
+			},
+		}),
+	},
+	chartWrapper: {
+		marginHorizontal: -10,
+	},
+	sectionTitle: {
+		fontSize: 20,
+		fontWeight: "600",
+		marginBottom: 15,
+	},
+	statsSection: {
+		marginTop: 20,
+	},
+	statsGrid: {
 		flexDirection: "row",
-		justifyContent: "space-around",
-		marginTop: 30,
+		flexWrap: "wrap",
+		justifyContent: "space-between",
+		gap: 10,
+		marginBottom: 15,
 	},
-	statBox: {
-		backgroundColor: "#fff",
+	statCard: {
+		width: "31%",
+		padding: 15,
 		borderRadius: 12,
-		padding: 20,
-		elevation: 5,
-		shadowColor: "#000",
-		shadowOpacity: 0.1,
-		shadowOffset: { width: 0, height: 4 },
-		shadowRadius: 6,
-		width: "28%",
 		alignItems: "center",
+		...Platform.select({
+			ios: {
+				shadowColor: "#000",
+				shadowOffset: { width: 0, height: 2 },
+				shadowOpacity: 0.1,
+				shadowRadius: 4,
+			},
+			android: {
+				elevation: 3,
+			},
+		}),
+	},
+	goalCard: {
+		padding: 20,
+		borderRadius: 12,
+		marginTop: 10,
+		...Platform.select({
+			ios: {
+				shadowColor: "#000",
+				shadowOffset: { width: 0, height: 2 },
+				shadowOpacity: 0.1,
+				shadowRadius: 4,
+			},
+			android: {
+				elevation: 3,
+			},
+		}),
 	},
 	statLabel: {
-		color: "#555",
-		fontSize: 16,
+		fontSize: 14,
 		fontWeight: "600",
-		marginBottom: 10,
+		marginBottom: 8,
 		textAlign: "center",
 	},
 	statValue: {
 		fontSize: 18,
-		fontWeight: "bold",
-		color: "#333",
+		fontWeight: "700",
 		textAlign: "center",
+	},
+	statSubtext: {
+		fontSize: 12,
+		marginTop: 4,
+		opacity: 0.8,
+		textAlign: "center",
+	},
+	goalLabel: {
+		fontSize: 16,
+		fontWeight: "600",
+		marginBottom: 8,
+	},
+	goalValue: {
+		fontSize: 24,
+		fontWeight: "700",
+		marginBottom: 8,
+	},
+	goalSubtext: {
+		fontSize: 14,
+		opacity: 0.8,
 	},
 	errorText: {
-		color: "#FF5733",
+		fontSize: 16,
 		textAlign: "center",
-		fontSize: 18,
 		marginHorizontal: 20,
-	},
-	noDataText: {
-		color: "#888",
-		textAlign: "center",
-		fontSize: 18,
-		marginHorizontal: 20,
-	},
-	tooltip: {
-		position: "absolute",
-		backgroundColor: "#000",
-		padding: 10,
-		borderRadius: 8,
-	},
-	tooltipText: {
-		color: "#fff",
-		fontSize: 14,
 	},
 });
 
