@@ -410,9 +410,17 @@ const App = () => {
 			// console.log("Main user:", authInfo.userId, authInfo.name);
 			// Fetch family members
 			const response = await api.get(`/api/family/${authInfo.userId}`);
+			if (response.data?.error === "No valid family members found") {
+				console.log("No family members found");
+				return; // Do nothing if no valid family members are found
+			}
 			setFamilyMembers(response.data);
 			console.log("Family members:", response);
 		} catch (error) {
+			if (axios.isAxiosError(error) && error.response?.status === 404) {
+				console.log("404 - No family members or user found, skipping error");
+				return; // Just return without doing anything
+			}
 			console.error("Error fetching family members:", error);
 			Alert.alert("Could not fetch family members");
 		}

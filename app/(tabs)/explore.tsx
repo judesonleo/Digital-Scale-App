@@ -8,18 +8,20 @@ import {
 	Image,
 	useColorScheme,
 	Alert,
+	RefreshControl,
 } from "react-native";
-import { Link } from "expo-router"; // Import Link from expo-router
+import { Link } from "expo-router";
 import api from "../../api";
 import { getAuthToken } from "../../utils/authStorage";
 import { lightMode } from "@/styles/homeconstant";
 import UserCard from "@/components/UserCard";
+import axios from "axios";
 
 interface User {
-	id: string; // Unique identifier for the user
+	id: string;
 	name: string;
 	username: string;
-	relationship?: string; // Optional field for the user's relationship
+	relationship?: string;
 	gender?: string;
 	height?: number;
 	latestweight?: number;
@@ -28,21 +30,14 @@ interface User {
 }
 const theme = {
 	colors: {
-		// Brand colors
 		primary: "#6854D9",
-
-		// Background colors
 		backgroundLight: "#F5F7FA",
 		backgroundDark: "#0A0A0A",
 		cardLight: "#FFFFFF",
 		cardDark: "#1E2732",
-
-		// Text colors
 		textPrimaryLight: "#1A1A1A",
 		textPrimaryDark: "#FFFFFF",
 		textSecondary: "#666666",
-
-		// Button colors
 		buttonText: "#FFFFFF",
 	},
 
@@ -95,6 +90,8 @@ const UsersListScreen = () => {
 	const [users, setUsers] = useState<User[]>([]);
 	const [mainUser, setMainUser] = useState<User | null>(null);
 	const scheme = useColorScheme();
+	const [isRefreshing, setIsRefreshing] = useState(false);
+
 	const handleDeleteUser = async (userId: string) => {
 		try {
 			await api.delete(`/api/users/${userId}`);
@@ -107,98 +104,66 @@ const UsersListScreen = () => {
 			Alert.alert("Error", "Failed to delete user");
 		}
 	};
-	useEffect(() => {
-		const fetchUsers = async () => {
-			try {
-				const authInfo = await getAuthToken();
-				console.log("Auth info:", authInfo);
+	const fetchUsers = async () => {
+		try {
+			const authInfo = await getAuthToken();
+			console.log("Auth info:", authInfo);
 
-				if (!authInfo?.userId) {
-					console.log("No userId in auth info.");
-					return;
-				}
-
-				// Fetch main user details
-				const mainUserResponse = await api.get(`/api/users/${authInfo.userId}`);
-				console.log("Main user response:", mainUserResponse.data);
-
-				setMainUser({
-					id: mainUserResponse.data._id, // Using `_id` as the main user's `id`
-					name: mainUserResponse.data.name,
-					username: mainUserResponse.data.username,
-					height: mainUserResponse.data.height,
-					gender: mainUserResponse.data.gender,
-					latestweight: parseFloat(mainUserResponse.data.latestWeight),
-					dob: mainUserResponse.data.dob,
-					age: mainUserResponse.data.age,
-				});
-
-				// Fetch family members
-				const familyResponse = await api.get(`/api/family/${authInfo.userId}`);
-				console.log("Family response:", familyResponse.data);
-
-				const familyUsers = familyResponse.data.map((family: any) => ({
-					id: family.userId, // Using `id` from `userId`
-					name: family.name,
-					username: family.username,
-					relationship: family.relationship,
-					height: family.height,
-					age: family.age,
-					dob: family.dob,
-					latestweight: parseFloat(family.latestWeight),
-					gender: family.gender,
-				}));
-
-				console.log("Processed family users:", familyUsers);
-				setUsers(familyUsers);
-			} catch (error) {
-				console.error("Error fetching users:", error);
+			if (!authInfo?.userId) {
+				console.log("No userId in auth info.");
+				return;
 			}
-		};
 
+			const mainUserResponse = await api.get(`/api/users/${authInfo.userId}`);
+			console.log("Main user response:", mainUserResponse.data);
+
+			setMainUser({
+				id: mainUserResponse.data._id,
+				name: mainUserResponse.data.name,
+				username: mainUserResponse.data.username,
+				height: mainUserResponse.data.height,
+				gender: mainUserResponse.data.gender,
+				latestweight: parseFloat(mainUserResponse.data.latestWeight),
+				dob: mainUserResponse.data.dob,
+				age: mainUserResponse.data.age,
+			});
+
+			// Fetch family members
+			const familyResponse = await api.get(`/api/family/${authInfo.userId}`);
+
+			console.log("Family response:", familyResponse.data);
+
+			const familyUsers = familyResponse.data.map((family: any) => ({
+				id: family.userId,
+				name: family.name,
+				username: family.username,
+				relationship: family.relationship,
+				height: family.height,
+				age: family.age,
+				dob: family.dob,
+				latestweight: parseFloat(family.latestWeight),
+				gender: family.gender,
+			}));
+
+			console.log("Processed family users:", familyUsers);
+			setUsers(familyUsers);
+		} catch (error) {
+			if (axios.isAxiosError(error) && error.response?.status === 404) {
+				console.log("404 - No family members or user found, skipping error");
+				return;
+			}
+			console.error("Error fetching users:", error);
+		}
+	};
+	useEffect(() => {
 		fetchUsers();
 	}, []);
+	const handleRefresh = async () => {
+		setIsRefreshing(true);
+		await fetchUsers();
+		setIsRefreshing(false);
+	};
 
-	// const renderUserCard = ({ item }: { item: User }) => {
-	// 	console.log("Rendering user card for:", item);
-	// 	const isDark = scheme === "dark";
-
-	// 	return (
-	// 		<TouchableOpacity
-	// 			style={[
-	// 				styles.card,
-	// 				{
-	// 					backgroundColor:
-	// 						scheme === "dark" ? lightMode.darkGreen : lightMode.darkGreen,
-	// 				},
-	// 			]}
-	// 		>
-	// 			<Image
-	// 				source={{ uri: `https://ui-avatars.com/api/?name=${item.name}` }}
-	// 				style={styles.avatar}
-	// 			/>
-	// 			<View style={styles.userInfo}>
-	// 				<Text style={styles.userName}>@{item.username}</Text>
-	// 				<Text style={styles.userName}>{item.name}</Text>
-	// 				<Text style={styles.username}>{item.relationship}</Text>
-	// 				<Text style={styles.username}>{item.age}</Text>
-	// 				{/* <Text style={styles.username}>{item.dob}</Text> */}
-	// 				<Text style={styles.username}>{item.gender}</Text>
-	// 				<Text style={styles.username}>{item.height}</Text>
-	// 				<Text style={styles.username}>{item.latestweight}</Text>
-	// 			</View>
-	// 			{/* Use Link to navigate to the dynamic route */}
-	// 			<Link
-	// 				href={{
-	// 					pathname: `/weightcharts/[userId]`,
-	// 					params: { userId: item.id }, // Pass the dynamic user ID
-	// 				}}
-	// 			>
-	// 				<Text style={styles.linkText}>View Weight Chart</Text>
-	// 			</Link>
-	// 		</TouchableOpacity>
-	// 	);
-	// };
 	const renderUserCard = ({ item, index }: { item: User; index: number }) => (
 		<UserCard user={item} index={index} onDelete={handleDeleteUser} />
 	);
@@ -218,7 +183,10 @@ const UsersListScreen = () => {
 			<FlatList
 				data={mainUser ? [mainUser, ...users] : users}
 				renderItem={renderUserCard}
-				keyExtractor={(item) => item.username} // Ensure `id` is unique for each user
+				keyExtractor={(item) => item.username}
+				refreshControl={
+					<RefreshControl refreshing={isRefreshing} onRefresh={handleRefresh} />
+				}
 			/>
 		</View>
 	);

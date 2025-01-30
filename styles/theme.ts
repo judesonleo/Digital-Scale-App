@@ -1,7 +1,7 @@
 export const lightTheme = {
 	colors: {
 		primary: {
-			dark: "#0B4619",
+			dark: "#0D301C",
 			light: "#8BC34A",
 			accent: "#FFA726",
 		},

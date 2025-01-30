@@ -6,19 +6,22 @@ interface AuthToken {
 	userId: number;
 	username: string;
 	name: string;
+	email: string;
 }
 
 export const saveAuthToken = async (
 	token: AuthToken["token"],
 	userId: AuthToken["userId"],
 	username: AuthToken["username"],
-	name: AuthToken["name"]
+	name: AuthToken["name"],
+	email: AuthToken["email"]
 ): Promise<void> => {
 	try {
 		await AsyncStorage.setItem("authToken", token);
 		await AsyncStorage.setItem("userId", userId.toString());
 		await AsyncStorage.setItem("username", username);
 		await AsyncStorage.setItem("name", name);
+		await AsyncStorage.setItem("email", email);
 	} catch (error) {
 		console.error("Error saving details", error);
 	}
@@ -30,7 +33,8 @@ export const getAuthToken = async () => {
 		const userId = await AsyncStorage.getItem("userId");
 		const username = await AsyncStorage.getItem("username");
 		const name = await AsyncStorage.getItem("name");
-		return { token, userId, username, name };
+		const email = await AsyncStorage.getItem("email");
+		return { token, userId, username, name, email };
 	} catch (error) {
 		console.error("Error retrieving token ,userId ,usernsme , name ", error);
 		return null;
@@ -43,6 +47,7 @@ export const removeAuthToken = async () => {
 		await AsyncStorage.removeItem("userId");
 		await AsyncStorage.removeItem("username");
 		await AsyncStorage.removeItem("name");
+		await AsyncStorage.removeItem("email");
 	} catch (error) {
 		console.error("Error removing token ,userId,username , name ", error);
 	}

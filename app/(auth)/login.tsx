@@ -41,9 +41,9 @@ const LoginScreen = () => {
 				emailOrUsername,
 				password,
 			});
-			const { token, userId, username, name } = data;
+			const { token, userId, username, name, email } = data;
 			if (token) {
-				await saveAuthToken(token, userId, username, name);
+				await saveAuthToken(token, userId, username, name, email);
 				router.replace("../(tabs)/home"); // Replace the login screen with the home screen
 			}
 		} catch (err: any) {
