@@ -33,6 +33,8 @@ const ESP32_NAME = "ESP32_TEST";
 const SERVICE_UUID = "4fafc201-1fb5-459e-8fcc-c5c9c331914b";
 const CHARACTERISTIC_UUID = "beb5483e-36e1-4688-b7f5-ea07361b26a8";
 interface FamilyMember {
+	userId: unknown;
+	// userId: unknown;
 	_id: string;
 	name: string;
 }
@@ -414,7 +416,13 @@ const App = () => {
 				console.log("No family members found");
 				return; // Do nothing if no valid family members are found
 			}
-			setFamilyMembers(response.data);
+			setFamilyMembers(
+				response.data.map((member: any) => ({
+					_id: member.userId.toString(),
+					name: member.name,
+				}))
+			);
+			// setFamilyMembers(response.data);
 			console.log("Family members:", response);
 		} catch (error) {
 			if (axios.isAxiosError(error) && error.response?.status === 404) {
