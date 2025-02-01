@@ -69,7 +69,8 @@
     "react-native-webview": "13.12.5",
     "recharts": "^2.15.0",
     "styled-components": "^6.1.14",
-    "victory-native": "^41.16.0"
+    "victory-native": "^41.16.0",
+    "expo-notifications": "~0.29.13"
   },
   "devDependencies": {
     "@babel/core": "^7.25.2",

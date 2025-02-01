@@ -9,6 +9,7 @@ import {
 	useColorScheme,
 	Alert,
 	Modal,
+	Platform,
 } from "react-native";
 import { Link, router } from "expo-router";
 import { Entypo } from "@expo/vector-icons";
@@ -188,13 +189,15 @@ const UserCard: React.FC<UserCardProps> = ({ user, index, onDelete }) => {
 	const renderMetric = (value: number | undefined, unit: string) => {
 		if (!value) return null;
 		return (
-			<Text style={[styles.detailText, { color: colors.primary }]}>
-				<Text style={styles.labelText}>{value}</Text>
-				<Text style={[styles.unitText, { color: colors.tertiary }]}>
-					{" "}
-					{unit}
+			<View style={styles.metricContainer}>
+				<Text style={[styles.detailText, { color: colors.primary }]}>
+					<Text style={styles.labelText}>{value}</Text>
+					<Text style={[styles.unitText, { color: colors.tertiary }]}>
+						{" "}
+						{unit}
+					</Text>
 				</Text>
-			</Text>
+			</View>
 		);
 	};
 
@@ -371,7 +374,7 @@ const UserCard: React.FC<UserCardProps> = ({ user, index, onDelete }) => {
 
 const styles = StyleSheet.create({
 	cardContainer: {
-		height: 200,
+		height: Platform.OS === "ios" ? 200 : 250,
 		marginBottom: DESIGN.spacing.lg,
 		borderRadius: DESIGN.borderRadius.xl,
 		borderWidth: 1,
@@ -383,6 +386,10 @@ const styles = StyleSheet.create({
 		shadowOpacity: 0.1,
 		shadowRadius: 8,
 		elevation: 5,
+	},
+	metricContainer: {
+		alignItems: "center",
+		// marginBottom: DESIGN.spacing.sm,
 	},
 	cardContent: {
 		flex: 1,

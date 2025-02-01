@@ -15,6 +15,7 @@ import { useColorScheme } from "@/hooks/useColorScheme";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import { Colors } from "@/constants/Colors";
 import { router } from "expo-router";
+// import * as Notifications from "expo-notifications";
 import { getAuthToken, removeAuthToken } from "../../utils/authStorage";
 import {
 	Lock,
@@ -169,7 +170,31 @@ const Settings = () => {
 			]
 		);
 	};
-
+	const handleEmailChange = () => {
+		Alert.alert("Change Email", "Do you want to change your email?", [
+			{ text: "Cancel", style: "cancel" },
+			{
+				text: "Change",
+				onPress: () => {
+					// router.push("/change-email");
+				},
+				style: "default",
+			},
+		]);
+	};
+	const handleNotificationToggle = async (value: boolean) => {
+		if (value) {
+			// const { status } = await Notifications.requestPermissionsAsync();
+			if (status !== "granted") {
+				Alert.alert(
+					"Permission Denied",
+					"You need to grant permission to receive notifications."
+				);
+				return;
+			}
+		}
+		toggleSetting("notificationsEnabled");
+	};
 	const handleLogout = () => {
 		Alert.alert("Logout", "Are you sure you want to logout?", [
 			{ text: "Cancel", style: "cancel" },
@@ -231,6 +256,7 @@ const Settings = () => {
 						title="Email"
 						value={userDetails.email}
 						colors={colors}
+						onPress={handleEmailChange}
 					/>
 					<SettingsOption
 						icon={<Lock size={24} color={colors.primary} />}
@@ -256,7 +282,7 @@ const Settings = () => {
 						title="Notifications"
 						isSwitch
 						value={userDetails.notificationsEnabled}
-						onToggle={() => toggleSetting("notificationsEnabled")}
+						onToggle={(value) => toggleSetting("notificationsEnabled")}
 						colors={colors}
 					/>
 					<SettingsOption

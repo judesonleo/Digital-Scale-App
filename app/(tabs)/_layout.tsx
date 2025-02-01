@@ -60,6 +60,13 @@ export default function TabLayout() {
 					headerShown: false,
 				}}
 			/>
+			<Tabs.Screen
+				name="editUsers/[userId]"
+				options={{
+					tabBarItemStyle: { display: "none" },
+					headerShown: false,
+				}}
+			/>
 		</Tabs>
 	);
 }

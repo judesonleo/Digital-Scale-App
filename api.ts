@@ -2,7 +2,7 @@ import axios from "axios";
 import { getAuthToken } from "./utils/authStorage";
 
 const api = axios.create({
-	baseURL: "https://scalebackend.judesonleo.me",
+	baseURL: process.env.EXPO_PUBLIC_API_BASE_URL,
 });
 
 api.interceptors.request.use(async (config) => {
