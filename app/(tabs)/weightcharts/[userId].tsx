@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useCallback } from "react";
 import {
 	View,
 	Text,
@@ -8,6 +8,9 @@ import {
 	Animated,
 	Platform,
 	ScrollView,
+	TouchableOpacity,
+	Alert,
+	RefreshControl,
 } from "react-native";
 import { LineChart } from "react-native-gifted-charts";
 import { format } from "date-fns";
@@ -15,6 +18,7 @@ import { useLocalSearchParams } from "expo-router";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import api from "../../../api";
+import EditWeightModal from "@/components/EditWeightModal";
 
 interface WeightLog {
 	_id: string;
@@ -47,7 +51,13 @@ interface WeightResponse {
 	weightColor: string;
 	weightLogs: WeightLog[];
 }
-
+interface EditWeightModalProps {
+	isVisible: boolean;
+	onClose: () => void;
+	onSave: (weight: number, notes: string) => Promise<void>;
+	initialWeight?: number;
+	initialNotes?: string;
+}
 const screenWidth = Dimensions.get("window").width;
 
 const WeightChartScreen: React.FC = () => {
@@ -56,6 +66,8 @@ const WeightChartScreen: React.FC = () => {
 	const [isLoading, setIsLoading] = useState(true);
 	const [error, setError] = useState<string | null>(null);
 	const { userId } = useLocalSearchParams();
+	const [refreshing, setRefreshing] = useState(false);
+	const [editingLog, setEditingLog] = useState<WeightLog | null>(null);
 
 	// Theme colors
 	const backgroundColor = useThemeColor({}, "background");
@@ -71,44 +83,103 @@ const WeightChartScreen: React.FC = () => {
 	// Animation values
 	const fadeAnim = useState(new Animated.Value(0))[0];
 	const scaleAnim = useState(new Animated.Value(0))[0];
+	const onRefresh = useCallback(async () => {
+		if (!userId) return;
 
+		setRefreshing(true);
+		try {
+			const [weightResponse, userResponse] = await Promise.all([
+				api.get<WeightResponse>(`/api/weights/${userId}`),
+				api.get<UserDetails>(`/api/users/${userId}`),
+			]);
+
+			setWeightData(weightResponse.data);
+			setUserDetails(userResponse.data);
+		} catch (error) {
+			console.error("Error refreshing data:", error);
+			Alert.alert("Error", "Failed to refresh data");
+		} finally {
+			setRefreshing(false);
+		}
+	}, [userId]);
+
+	const handleDeleteWeight = useCallback(
+		async (weightId: string) => {
+			Alert.alert(
+				"Delete Weight Log",
+				"Are you sure you want to delete this weight log?",
+				[
+					{ text: "Cancel", style: "cancel" },
+					{
+						text: "Delete",
+						style: "destructive",
+						onPress: async () => {
+							try {
+								await api.delete(`/api/weights/${weightId}`);
+								onRefresh();
+							} catch (error) {
+								console.error("Error deleting weight:", error);
+								Alert.alert("Error", "Failed to delete weight log");
+							}
+						},
+					},
+				]
+			);
+		},
+		[onRefresh]
+	);
+
+	const handleEditWeight = useCallback(
+		async (weightId: string, newWeight: number, newNotes: string) => {
+			try {
+				await api.put(`/api/weights/${weightId}`, {
+					weight: newWeight,
+					notes: newNotes,
+				});
+				onRefresh();
+			} catch (error) {
+				console.error("Error updating weight:", error);
+				Alert.alert("Error", "Failed to update weight log");
+			}
+		},
+		[onRefresh]
+	);
+	const fetchData = async () => {
+		try {
+			setIsLoading(true);
+			const [weightResponse, userResponse] = await Promise.all([
+				api.get<WeightResponse>(`/api/weights/${userId}`),
+				api.get<UserDetails>(`/api/users/${userId}`),
+			]);
+
+			setWeightData(weightResponse.data);
+			setUserDetails(userResponse.data);
+
+			Animated.parallel([
+				Animated.timing(fadeAnim, {
+					toValue: 1,
+					duration: 1000,
+					useNativeDriver: true,
+				}),
+				Animated.spring(scaleAnim, {
+					toValue: 1,
+					tension: 50,
+					friction: 7,
+					useNativeDriver: true,
+				}),
+			]).start();
+		} catch (error) {
+			console.error("Error fetching data:", error);
+			setError("Failed to load data");
+		} finally {
+			setIsLoading(false);
+		}
+	};
 	useEffect(() => {
 		if (!userId) {
 			setError("Invalid User ID");
 			return;
 		}
-
-		const fetchData = async () => {
-			try {
-				setIsLoading(true);
-				const [weightResponse, userResponse] = await Promise.all([
-					api.get<WeightResponse>(`/api/weights/${userId}`),
-					api.get<UserDetails>(`/api/users/${userId}`),
-				]);
-
-				setWeightData(weightResponse.data);
-				setUserDetails(userResponse.data);
-
-				Animated.parallel([
-					Animated.timing(fadeAnim, {
-						toValue: 1,
-						duration: 1000,
-						useNativeDriver: true,
-					}),
-					Animated.spring(scaleAnim, {
-						toValue: 1,
-						tension: 50,
-						friction: 7,
-						useNativeDriver: true,
-					}),
-				]).start();
-			} catch (error) {
-				console.error("Error fetching data:", error);
-				setError("Failed to load data");
-			} finally {
-				setIsLoading(false);
-			}
-		};
 
 		fetchData();
 	}, [userId]);
@@ -169,10 +240,67 @@ const WeightChartScreen: React.FC = () => {
 
 	const healthStatus = getHealthStatus(parseFloat(weightData.bmi));
 
+	const renderWeightLogs = () => (
+		<View style={styles.logsContainer}>
+			<Text style={[styles.sectionTitle, { color: textColor }]}>
+				Weight History
+			</Text>
+			{weightData?.weightLogs.map((log) => (
+				<Animated.View
+					key={log._id}
+					style={[
+						styles.logCard,
+						{ backgroundColor: cardColor, opacity: fadeAnim },
+					]}
+				>
+					<View style={styles.logHeader}>
+						<View>
+							<Text style={[styles.logDate, { color: textColor }]}>
+								{format(new Date(log.timestamp), "MMM dd, yyyy")}
+							</Text>
+							<Text style={[styles.logWeight, { color: primaryColor }]}>
+								{log.weight} kg
+							</Text>
+							{log.notes && (
+								<Text style={[styles.logNotes, { color: textColor }]}>
+									{log.notes}
+								</Text>
+							)}
+						</View>
+						<View style={styles.logActions}>
+							<TouchableOpacity
+								onPress={() => setEditingLog(log)}
+								style={styles.actionButton}
+							>
+								<MaterialCommunityIcons
+									name="pencil"
+									size={20}
+									color={primaryColor}
+								/>
+							</TouchableOpacity>
+							<TouchableOpacity
+								onPress={() => handleDeleteWeight(log._id)}
+								style={styles.actionButton}
+							>
+								<MaterialCommunityIcons
+									name="delete"
+									size={20}
+									color={dangerColor}
+								/>
+							</TouchableOpacity>
+						</View>
+					</View>
+				</Animated.View>
+			))}
+		</View>
+	);
 	return (
 		<ScrollView
 			style={[styles.container, { backgroundColor }]}
 			showsVerticalScrollIndicator={false}
+			refreshControl={
+				<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+			}
 		>
 			<Animated.View style={[styles.headerContainer, { opacity: fadeAnim }]}>
 				<View>
@@ -312,7 +440,7 @@ const WeightChartScreen: React.FC = () => {
 							backgroundColor: cardColor,
 							opacity: fadeAnim,
 							borderLeftWidth: 4,
-							marginBottom: 120,
+							// marginBottom: 120,
 							borderLeftColor:
 								weightData.weightColor === "red" ? dangerColor : successColor,
 						},
@@ -338,6 +466,19 @@ const WeightChartScreen: React.FC = () => {
 							: "Stay motivated! You can do it!"}
 					</Text>
 				</Animated.View>
+				{renderWeightLogs()}
+				<EditWeightModal
+					isVisible={!!editingLog}
+					onClose={() => setEditingLog(null)}
+					onSave={async (weight, notes) => {
+						if (editingLog) {
+							await handleEditWeight(editingLog._id, weight, notes);
+							setEditingLog(null);
+						}
+					}}
+					initialWeight={editingLog?.weight}
+					initialNotes={editingLog?.notes}
+				/>
 			</View>
 		</ScrollView>
 	);
@@ -472,6 +613,52 @@ const styles = StyleSheet.create({
 		fontSize: 16,
 		textAlign: "center",
 		marginHorizontal: 20,
+	},
+	logsContainer: {
+		marginTop: 20,
+		paddingBottom: 120,
+	},
+	logCard: {
+		padding: 15,
+		borderRadius: 12,
+		marginBottom: 10,
+		...Platform.select({
+			ios: {
+				shadowColor: "#000",
+				shadowOffset: { width: 0, height: 1 },
+				shadowOpacity: 0.1,
+				shadowRadius: 4,
+			},
+			android: {
+				elevation: 2,
+			},
+		}),
+	},
+	logHeader: {
+		flexDirection: "row",
+		justifyContent: "space-between",
+		alignItems: "flex-start",
+	},
+	logDate: {
+		fontSize: 14,
+		fontWeight: "600",
+		marginBottom: 4,
+	},
+	logWeight: {
+		fontSize: 18,
+		fontWeight: "700",
+		marginBottom: 4,
+	},
+	logNotes: {
+		fontSize: 14,
+		opacity: 0.8,
+	},
+	logActions: {
+		flexDirection: "row",
+		gap: 10,
+	},
+	actionButton: {
+		padding: 8,
 	},
 });
 
