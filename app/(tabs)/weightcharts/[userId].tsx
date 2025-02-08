@@ -51,13 +51,13 @@ interface WeightResponse {
 	weightColor: string;
 	weightLogs: WeightLog[];
 }
-interface EditWeightModalProps {
-	isVisible: boolean;
-	onClose: () => void;
-	onSave: (weight: number, notes: string) => Promise<void>;
-	initialWeight?: number;
-	initialNotes?: string;
-}
+// interface EditWeightModalProps {
+// 	isVisible: boolean;
+// 	onClose: () => void;
+// 	onSave: (weight: number, notes: string) => Promise<void>;
+// 	initialWeight?: number;
+// 	initialNotes?: string;
+// }
 const screenWidth = Dimensions.get("window").width;
 
 const WeightChartScreen: React.FC = () => {

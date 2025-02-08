@@ -261,8 +261,9 @@ const App = () => {
 					Alert.alert("Error scanning for devices");
 					return;
 				}
-
-				if (device?.name === ESP32_NAME) {
+				console.log(device?.name);
+				console.log(device?.id);
+				if (device?.name?.startsWith(ESP32_NAME)) {
 					clearTimeout(scanTimeout);
 					manager.stopDeviceScan();
 					console.log("Found device:", device.name);
@@ -372,7 +373,7 @@ const App = () => {
 				type: "success",
 				position: "top",
 				text1: "Weight Logged",
-				text2: `${weightValue} logged for user`,
+				text2: `${weightValue} logged for ${response.data.userName}`,
 				visibilityTime: 2000,
 			});
 
