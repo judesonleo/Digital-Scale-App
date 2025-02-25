@@ -1,4 +1,4 @@
-import { View, StyleSheet } from "react-native";
+import { View, StyleSheet, Pressable } from "react-native";
 import { PlatformPressable } from "@react-navigation/elements";
 import React, { useEffect } from "react";
 import Animated, {
@@ -60,7 +60,14 @@ const TabBarButton: React.FC<TabBarButtonProps> = ({
 		return icon[normalizedRouteName]?.({ color }) || null;
 	}, [routeName, color]);
 	return (
-		<PlatformPressable onPress={onPress} style={styles.tabBarItem}>
+		<Pressable
+			onPress={onPress}
+			style={styles.tabBarItem}
+			android_ripple={{
+				color: "transparent",
+				borderless: true,
+			}}
+		>
 			<Animated.View style={[animatedIconStyle]}>
 				{/* {icon[routeName.toLowerCase() as RouteName]?.({ color })} */}
 				{IconComponent}
@@ -77,7 +84,7 @@ const TabBarButton: React.FC<TabBarButtonProps> = ({
 			>
 				{label}
 			</Animated.Text>
-		</PlatformPressable>
+		</Pressable>
 	);
 };
 
