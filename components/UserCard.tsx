@@ -210,6 +210,7 @@ const UserCard: React.FC<UserCardProps> = ({ user, index, onDelete }) => {
 					opacity: opacityAnim,
 					backgroundColor: cardColors.background,
 					borderColor: cardColors.border,
+					shadowColor: scheme === "dark" ? "white" : "#000",
 				},
 			]}
 		>
@@ -378,14 +379,15 @@ const styles = StyleSheet.create({
 		marginBottom: DESIGN.spacing.lg,
 		borderRadius: DESIGN.borderRadius.xl,
 		borderWidth: 1,
-		shadowColor: "#000",
 		shadowOffset: {
 			width: 0,
 			height: 2,
 		},
-		shadowOpacity: 0.1,
-		shadowRadius: 8,
+		shadowOpacity: 0.2,
+		shadowRadius: 2,
 		elevation: 5,
+		// marginVertical: DESIGN.spacing.lg,
+		// paddingEnd: 50,
 	},
 	metricContainer: {
 		alignItems: "center",

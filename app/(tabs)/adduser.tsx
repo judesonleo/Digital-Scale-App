@@ -12,6 +12,7 @@ import {
 	Platform,
 	ScrollView,
 	useColorScheme,
+	SafeAreaView,
 } from "react-native";
 import React, { useEffect, useState, useRef, useCallback, memo } from "react";
 import DateTimePicker from "@react-native-community/datetimepicker";
@@ -109,7 +110,7 @@ const InputField = memo<InputFieldProps>(
 				style={[
 					styles.input,
 					{
-						backgroundColor: theme.inputBackground,
+						backgroundColor: theme.background,
 						borderColor: error ? theme.error : theme.border,
 						color: theme.text,
 					},
@@ -238,148 +239,152 @@ const AddUser: React.FC = () => {
 	}, [newFamilyMember, userDetails, validateForm]);
 
 	return (
-		<KeyboardAvoidingView
-			style={[styles.container, { backgroundColor: theme.background }]}
-			behavior={Platform.OS === "ios" ? "padding" : "height"}
-			keyboardVerticalOffset={Platform.OS === "ios" ? 64 : 0}
-		>
-			<ScrollView
-				showsVerticalScrollIndicator={false}
-				contentContainerStyle={styles.scrollContainer}
-				keyboardShouldPersistTaps="handled"
+		<SafeAreaView style={{ flex: 1 }}>
+			<KeyboardAvoidingView
+				style={[styles.container, { backgroundColor: "#000" }]}
+				behavior={Platform.OS === "ios" ? "padding" : "height"}
+				keyboardVerticalOffset={Platform.OS === "ios" ? 64 : 0}
 			>
-				<TouchableOpacity
-					onPress={() => router.navigate("/(tabs)/settings")}
-					style={styles.backButton}
+				<ScrollView
+					showsVerticalScrollIndicator={false}
+					contentContainerStyle={styles.scrollContainer}
+					keyboardShouldPersistTaps="handled"
 				>
-					<Text style={[styles.backButtonText, { color: theme.secondary }]}>
-						← Back
-					</Text>
-				</TouchableOpacity>
+					<TouchableOpacity
+						onPress={() => router.navigate("/(tabs)/settings")}
+						style={styles.backButton}
+					>
+						<Text style={[styles.backButtonText, { color: theme.secondary }]}>
+							← Back
+						</Text>
+					</TouchableOpacity>
 
-				<Animated.View
-					style={[
-						styles.formContainer,
-						{
-							backgroundColor: theme.surface,
-							opacity: fadeAnim,
-							transform: [{ translateY: slideAnim }],
-						},
-					]}
-				>
-					<Text style={[styles.title, { color: theme.primary }]}>
-						Add Family Member
-					</Text>
+					<Animated.View
+						style={[
+							styles.formContainer,
+							{
+								backgroundColor: theme.background,
+								opacity: fadeAnim,
+								transform: [{ translateY: slideAnim }],
+							},
+						]}
+					>
+						<Text style={[styles.title, { color: theme.primary }]}>
+							Add Family Member
+						</Text>
 
-					<InputField
-						placeholder="Family Member Name"
-						value={newFamilyMember.name}
-						onChangeText={handleInputChange("name")}
-						error={errors.name}
-						theme={theme}
-					/>
+						<InputField
+							placeholder="Family Member Name"
+							value={newFamilyMember.name}
+							onChangeText={handleInputChange("name")}
+							error={errors.name}
+							theme={theme}
+						/>
 
-					<InputField
-						placeholder="Username"
-						value={newFamilyMember.username}
-						onChangeText={handleInputChange("username")}
-						error={errors.username}
-						theme={theme}
-					/>
+						<InputField
+							placeholder="Username"
+							value={newFamilyMember.username}
+							onChangeText={handleInputChange("username")}
+							error={errors.username}
+							theme={theme}
+						/>
 
-					<InputField
-						placeholder="Relationship"
-						value={newFamilyMember.relationship}
-						onChangeText={handleInputChange("relationship")}
-						error={errors.relationship}
-						theme={theme}
-					/>
+						<InputField
+							placeholder="Relationship"
+							value={newFamilyMember.relationship}
+							onChangeText={handleInputChange("relationship")}
+							error={errors.relationship}
+							theme={theme}
+						/>
 
-					{/* <InputField
+						{/* <InputField
 						placeholder="Gender"
 						value={newFamilyMember.gender}
 						onChangeText={handleInputChange("gender")}
 						error={errors.gender}
 						theme={theme}
 					/> */}
-					<Picker
-						selectedValue={newFamilyMember.gender}
-						onValueChange={handleInputChange("gender")}
-						style={[
-							// styles.input,
-							{
-								backgroundColor: theme.inputBackground,
-								height: Platform.OS === "ios" ? 220 : 55,
-								marginBottom: Platform.OS === "ios" ? 15 : 15,
-								borderRadius: 8,
-								borderWidth: 1,
-								borderColor:
-									colorScheme === "dark" ? darkTheme.border : lightTheme.border,
-							},
-						]}
-					>
-						<Picker.Item label="Select Gender" value="" />
-						<Picker.Item label="Male" value="Male" />
-						<Picker.Item label="Female" value="Female" />
-						<Picker.Item label="Other" value="Other" />
-					</Picker>
-
-					<InputField
-						placeholder="Height (in cm)"
-						value={newFamilyMember.height}
-						onChangeText={handleInputChange("height")}
-						error={errors.height}
-						keyboardType="numeric"
-						theme={theme}
-					/>
-
-					<TouchableOpacity
-						style={[
-							styles.dateButton,
-							{
-								backgroundColor: theme.inputBackground,
-								borderColor: theme.border,
-							},
-						]}
-						onPress={() => setShowDatePicker(true)}
-					>
-						<Text style={[styles.dateButtonText, { color: theme.text }]}>
-							Date of Birth: {newFamilyMember.dob.toLocaleDateString()}
-						</Text>
-					</TouchableOpacity>
-
-					{showDatePicker && (
-						<DateTimePicker
-							value={newFamilyMember.dob}
-							mode="date"
-							display="inline"
-							style={{
-								alignSelf: "center",
-							}}
-							minimumDate={new Date(1900, 0, 1)}
-							maximumDate={new Date()}
-							onChange={handleDateChange}
-							themeVariant={colorScheme as "light" | "dark" | undefined}
-						/>
-					)}
-
-					<TouchableOpacity
-						style={[
-							styles.submitButton,
-							{ backgroundColor: theme.buttonBackground },
-						]}
-						onPress={handleAddUser}
-						activeOpacity={0.8}
-					>
-						<Text
-							style={[styles.submitButtonText, { color: theme.buttonText }]}
+						<Picker
+							selectedValue={newFamilyMember.gender}
+							onValueChange={handleInputChange("gender")}
+							style={[
+								styles.input,
+								{
+									backgroundColor: theme.background,
+									height: Platform.OS === "ios" ? 220 : 55,
+									marginBottom: Platform.OS === "ios" ? 15 : 15,
+									borderRadius: 8,
+									borderWidth: 1,
+									borderColor:
+										colorScheme === "dark"
+											? darkTheme.border
+											: lightTheme.border,
+								},
+							]}
 						>
-							Add Family Member
-						</Text>
-					</TouchableOpacity>
-				</Animated.View>
-			</ScrollView>
-		</KeyboardAvoidingView>
+							<Picker.Item label="Select Gender" value="" />
+							<Picker.Item label="Male" value="Male" />
+							<Picker.Item label="Female" value="Female" />
+							<Picker.Item label="Other" value="Other" />
+						</Picker>
+
+						<InputField
+							placeholder="Height (in cm)"
+							value={newFamilyMember.height}
+							onChangeText={handleInputChange("height")}
+							error={errors.height}
+							keyboardType="numeric"
+							theme={theme}
+						/>
+
+						<TouchableOpacity
+							style={[
+								styles.dateButton,
+								{
+									backgroundColor: theme.background,
+									borderColor: theme.border,
+								},
+							]}
+							onPress={() => setShowDatePicker(true)}
+						>
+							<Text style={[styles.dateButtonText, { color: theme.text }]}>
+								Date of Birth: {newFamilyMember.dob.toLocaleDateString()}
+							</Text>
+						</TouchableOpacity>
+
+						{showDatePicker && (
+							<DateTimePicker
+								value={newFamilyMember.dob}
+								mode="date"
+								display="inline"
+								style={{
+									alignSelf: "center",
+								}}
+								minimumDate={new Date(1900, 0, 1)}
+								maximumDate={new Date()}
+								onChange={handleDateChange}
+								themeVariant={colorScheme as "light" | "dark" | undefined}
+							/>
+						)}
+
+						<TouchableOpacity
+							style={[
+								styles.submitButton,
+								{ backgroundColor: theme.buttonBackground },
+							]}
+							onPress={handleAddUser}
+							activeOpacity={0.8}
+						>
+							<Text
+								style={[styles.submitButtonText, { color: theme.buttonText }]}
+							>
+								Add Family Member
+							</Text>
+						</TouchableOpacity>
+					</Animated.View>
+				</ScrollView>
+			</KeyboardAvoidingView>
+		</SafeAreaView>
 	);
 };
 
@@ -392,7 +397,7 @@ const styles = StyleSheet.create({
 		padding: 20,
 	},
 	backButton: {
-		paddingVertical: 10,
+		// paddingVertical: 10,
 		paddingHorizontal: 20,
 		marginBottom: 20,
 	},
@@ -408,7 +413,7 @@ const styles = StyleSheet.create({
 		shadowOpacity: 0.1,
 		shadowRadius: 8,
 		elevation: 5,
-		marginBottom: 120,
+		// marginBottom: 120,
 	},
 	title: {
 		fontSize: 24,

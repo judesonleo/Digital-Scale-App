@@ -229,7 +229,15 @@ const EditUser = () => {
 				)}
 
 				<TouchableOpacity
-					style={[styles.updateButton, { backgroundColor: primaryColor }]}
+					style={[
+						styles.updateButton,
+						{
+							backgroundColor:
+								colorScheme === "dark"
+									? lightTheme.colors.primary.light
+									: lightTheme.colors.primary.dark,
+						},
+					]}
 					onPress={handleUpdate}
 				>
 					<Text style={styles.updateButtonText}>Update User</Text>

@@ -24,6 +24,8 @@ export const TabBar = ({
 		width: 100,
 		height: 20,
 	});
+	const [activeTabIndex, setActiveTabIndex] = useState(state.index);
+
 	const buttonWidth = dimensions.width / 3;
 	const onTabberLayout = (event: LayoutChangeEvent) => {
 		const { width, height } = event.nativeEvent.layout;
@@ -67,10 +69,11 @@ export const TabBar = ({
 					].includes(route.name)
 				)
 					return null;
-				const isFocused = state.index === index;
+				const isFocused = activeTabIndex === index;
 				const routeName = route.name.toLowerCase();
 
 				const onPress = () => {
+					setActiveTabIndex(index);
 					tabPositionX.value = withSpring(buttonWidth * index, {
 						duration: 1500,
 					});

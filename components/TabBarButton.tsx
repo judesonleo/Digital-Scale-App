@@ -55,11 +55,15 @@ const TabBarButton: React.FC<TabBarButtonProps> = ({
 			opacity,
 		};
 	});
-
+	const IconComponent = React.useMemo(() => {
+		const normalizedRouteName = routeName.toLowerCase() as RouteName;
+		return icon[normalizedRouteName]?.({ color }) || null;
+	}, [routeName, color]);
 	return (
 		<PlatformPressable onPress={onPress} style={styles.tabBarItem}>
 			<Animated.View style={[animatedIconStyle]}>
-				{icon[routeName.toLowerCase() as RouteName]?.({ color })}
+				{/* {icon[routeName.toLowerCase() as RouteName]?.({ color })} */}
+				{IconComponent}
 			</Animated.View>
 
 			<Animated.Text

@@ -56,7 +56,7 @@ interface WeightResponse {
 // 	onClose: () => void;
 // 	onSave: (weight: number, notes: string) => Promise<void>;
 // 	initialWeight?: number;
-// 	initialNotes?: string;
+// 	initialNotes?: string;cd
 // }
 const screenWidth = Dimensions.get("window").width;
 

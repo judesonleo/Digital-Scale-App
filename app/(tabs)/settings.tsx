@@ -219,7 +219,7 @@ const Settings = () => {
 	const styles = makeStyles(colors);
 
 	return (
-		<ScrollView style={styles.container}>
+		<ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
 			<View style={styles.content}>
 				{/* Profile Card */}
 				<View style={styles.profileCard}>
@@ -322,10 +322,11 @@ const makeStyles = (colors: ThemeColors) =>
 			backgroundColor: colors.background,
 			// margin: 16,
 			marginTop: 50,
-			marginBottom: 110,
+			// marginBottom: 110,
 		},
 		content: {
 			padding: 16,
+			paddingBottom: 100,
 		},
 		profileCard: {
 			backgroundColor: colors.card,

@@ -16,6 +16,10 @@ import { getAuthToken } from "../../utils/authStorage";
 import { lightMode } from "@/styles/homeconstant";
 import UserCard from "@/components/UserCard";
 import axios from "axios";
+import {
+	SafeAreaFrameContext,
+	SafeAreaView,
+} from "react-native-safe-area-context";
 
 interface User {
 	id: string;
@@ -184,6 +188,7 @@ const UsersListScreen = () => {
 				data={mainUser ? [mainUser, ...users] : users}
 				renderItem={renderUserCard}
 				keyExtractor={(item) => item.username}
+				showsVerticalScrollIndicator={false}
 				refreshControl={
 					<RefreshControl refreshing={isRefreshing} onRefresh={handleRefresh} />
 				}
@@ -197,8 +202,10 @@ const styles = StyleSheet.create({
 		flex: 1,
 		paddingTop: 50,
 		paddingHorizontal: 26,
-		marginBottom: 110,
-		backgroundColor: "#f4f4f4",
+		paddingBottom: 80,
+		// marginBottom: 00,
+		// backgroundColor: "#f4f4f4",
+		// marginBottom: 100,
 	},
 	title: {
 		fontSize: 24,
@@ -220,8 +227,8 @@ const styles = StyleSheet.create({
 		shadowOffset: { width: 0, height: 8 },
 		shadowOpacity: 0.1,
 		shadowRadius: 4,
-		boxShadow: "0px 2px 4px rgba(45, 147, 120, 0.1)",
-		// elevation: 3,
+		// boxShadow: "0px 2px 4px rgba(45, 147, 120, 0.1)",
+		elevation: 3,
 	},
 	avatar: {
 		width: 50,

@@ -612,6 +612,7 @@ const App = () => {
 					<View
 						style={[
 							styles.statusCard,
+							isDark ? styles.shadowDark : styles.shadowLight,
 							{
 								backgroundColor:
 									scheme === "dark" ? lightMode.black : lightMode.white,
@@ -650,11 +651,12 @@ const App = () => {
 					<View
 						style={[
 							styles.weightCard,
+							isDark ? styles.shadowDark : styles.shadowLight,
 							{
 								backgroundColor:
 									scheme === "dark" ? lightMode.black : lightMode.darkGreen,
 								borderColor:
-									scheme === "dark" ? lightMode.white : lightMode.text.primary,
+									scheme === "dark" ? lightMode.white : lightMode.black,
 							},
 						]}
 					>
@@ -690,9 +692,12 @@ const App = () => {
 					<View
 						style={[
 							styles.userCard,
+							isDark ? styles.shadowDark : styles.shadowLight,
 							{
 								backgroundColor:
 									scheme === "dark" ? lightMode.black : lightMode.darkGreen,
+								borderColor:
+									scheme === "dark" ? lightMode.white : lightMode.black,
 							},
 						]}
 					>
@@ -789,22 +794,13 @@ const styles = StyleSheet.create({
 	},
 	statusCard: {
 		flexDirection: "row",
-		padding: 16,
-		boxShadow: "0px 2px 4px rgba(182, 202, 205, 0.5)",
-		// borderRadius: 12,
-		borderColor: lightMode.white,
+		padding: 20,
+
 		borderWidth: 1,
 		marginBottom: 16,
 		borderRadius: 12,
-		backgroundColor: lightMode.black,
-		shadowColor: lightMode.white,
-		shadowOffset: {
-			width: 2,
-			height: 0.9,
-		},
-		// shadowRadius: 18,
-		// shadowOpacity: 0.9,
-		// elevation: 9,
+		width: "100%",
+		marginVertical: 10,
 	},
 	statusIndicator: {
 		width: 12,
@@ -831,19 +827,35 @@ const styles = StyleSheet.create({
 		borderStyle: "solid",
 		marginBottom: 16,
 		alignItems: "center",
-		// shadowColor: "#000",
-		// shadowOffset: { width: 0, height: 2 },
-		shadowOpacity: 0.5,
-		shadowRadius: 1,
+
 		borderWidth: 1,
-		backgroundColor: lightMode.black,
-		shadowColor: lightMode.white,
-		shadowOffset: {
-			width: 2,
-			height: 0.9,
-		},
-		// elevation: 3,
-		boxShadow: "0px 2px 4px rgba(182, 202, 205, 0.1)",
+	},
+
+	shadowLight: {
+		...Platform.select({
+			ios: {
+				shadowColor: lightMode.black,
+				shadowOffset: { width: 0, height: 2 },
+				shadowOpacity: 0.1,
+				shadowRadius: 8,
+			},
+			android: {
+				elevation: 4,
+			},
+		}),
+	},
+	shadowDark: {
+		...Platform.select({
+			ios: {
+				shadowColor: lightMode.white,
+				shadowOffset: { width: 0, height: 2 },
+				shadowOpacity: 0.1,
+				shadowRadius: 8,
+			},
+			android: {
+				elevation: 4,
+			},
+		}),
 	},
 	weightLabel: {
 		fontSize: 16,
@@ -857,6 +869,7 @@ const styles = StyleSheet.create({
 		padding: 20,
 		borderRadius: 22,
 		backgroundColor: lightMode.darkGreen,
+		borderWidth: 1,
 
 		shadowOpacity: 0.5,
 	},
