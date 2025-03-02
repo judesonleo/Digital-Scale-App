@@ -530,11 +530,11 @@ const App = () => {
 								styles.picker,
 								styles.androidPicker,
 								{
-									color: scheme === "dark" ? "#fff" : "#333",
+									color: scheme === "dark" ? "#fff" : "black",
 									backgroundColor:
 										scheme === "dark"
 											? darkMode.background
-											: lightMode.background, //hi
+											: lightMode.background,
 								},
 							]}
 							dropdownIconColor={
@@ -545,14 +545,14 @@ const App = () => {
 								label="Select User"
 								value={null}
 								style={styles.androidPickerItem}
-								color={scheme === "dark" ? "#fff" : "#333"}
+								// color={scheme === "dark" ? "#fff" : "#333"}
 							/>
 							{mainUser && (
 								<Picker.Item
 									label={mainUser.name}
 									value={mainUser._id}
 									style={styles.androidPickerItem}
-									color={scheme === "dark" ? "#fff" : "#333"}
+									// color={scheme === "dark" ? "#fff" : "#333"}
 									key={mainUser._id}
 								/>
 							)}
@@ -562,7 +562,7 @@ const App = () => {
 									label={member.name}
 									value={member._id}
 									style={styles.androidPickerItem}
-									color={scheme === "dark" ? "#fff" : "#333"}
+									// color={scheme === "dark" ? "#fff" : "#333"}
 								/>
 							))}
 						</Picker>

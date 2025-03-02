@@ -391,6 +391,7 @@ const AddUser: React.FC = () => {
 const styles = StyleSheet.create({
 	container: {
 		flex: 1,
+		paddingTop: 30,
 	},
 	scrollContainer: {
 		flexGrow: 1,

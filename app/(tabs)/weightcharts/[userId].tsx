@@ -19,6 +19,7 @@ import { useThemeColor } from "@/hooks/useThemeColor";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import api from "../../../api";
 import EditWeightModal from "@/components/EditWeightModal";
+import AddWeightModal from "@/components/AddweightModel";
 
 interface WeightLog {
 	_id: string;
@@ -68,6 +69,7 @@ const WeightChartScreen: React.FC = () => {
 	const { userId } = useLocalSearchParams();
 	const [refreshing, setRefreshing] = useState(false);
 	const [editingLog, setEditingLog] = useState<WeightLog | null>(null);
+	const [showAddWeightModal, setShowAddWeightModal] = useState<boolean>(false);
 
 	// Theme colors
 	const backgroundColor = useThemeColor({}, "background");
@@ -307,6 +309,7 @@ const WeightChartScreen: React.FC = () => {
 					<Text style={[styles.title, { color: textColor }]}>
 						{userDetails?.name || "Weight"} Progress
 					</Text>
+
 					<Text style={[styles.subtitle, { color: textColor }]}>
 						{formatWithEmoji(
 							"weight",
@@ -314,6 +317,9 @@ const WeightChartScreen: React.FC = () => {
 						)}
 					</Text>
 				</View>
+				<TouchableOpacity onPress={() => setShowAddWeightModal(true)}>
+					<MaterialCommunityIcons name="plus" size={32} color={primaryColor} />
+				</TouchableOpacity>{" "}
 				<MaterialCommunityIcons
 					name={
 						weightData.trend === "up"
@@ -478,6 +484,12 @@ const WeightChartScreen: React.FC = () => {
 					}}
 					initialWeight={editingLog?.weight}
 					initialNotes={editingLog?.notes}
+				/>
+				<AddWeightModal
+					isVisible={showAddWeightModal}
+					onClose={() => setShowAddWeightModal(false)}
+					userId={userId as string}
+					onSuccess={onRefresh}
 				/>
 			</View>
 		</ScrollView>
