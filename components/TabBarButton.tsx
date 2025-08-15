@@ -89,7 +89,14 @@ const TabBarButton: React.FC<TabBarButtonProps> = ({
 					animatedTextStyle,
 				]}
 			>
-				{label}
+				{typeof label === "string"
+					? label
+					: label({
+							focused: isFocused,
+							color: isFocused ? lightMode.darkGreen : lightMode.lightGreen,
+							position: "below",
+							children: "",
+					  })}
 			</Animated.Text>
 		</Pressable>
 	);
