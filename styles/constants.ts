@@ -18,6 +18,7 @@ export const COLORS = {
 
 export const FONT_SIZES = {
 	small: 14,
+	medium: 16,
 	middle: 16,
 	large: 20,
 	xlarge: 24,

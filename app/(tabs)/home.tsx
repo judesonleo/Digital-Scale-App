@@ -169,7 +169,7 @@ const App = () => {
 	const [lastConnectedDevice, setLastConnectedDevice] =
 		useState<BleDevice | null>(null);
 	const [isReconnecting, setIsReconnecting] = useState(false);
-	const reconnectTimeoutRef = useRef<NodeJS.Timeout>();
+	const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 	const [isOnline, setIsOnline] = useState(true);
 	const [isSyncing, setIsSyncing] = useState(false);
 	const [isValidating, setIsValidating] = useState(false);

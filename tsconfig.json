@@ -8,7 +8,7 @@
 		},
 		"jsx": "react-native",
 		"lib": ["ES2015", "DOM"],
-		"moduleResolution": "node",
+		"moduleResolution": "bundler",
 		"noEmit": true,
 		"resolveJsonModule": true,
 		"skipLibCheck": true,

@@ -5,9 +5,8 @@ import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { StyleSheet } from "react-native";
 import { BottomTabBarProps } from "@react-navigation/bottom-tabs";
 import { lightMode, darkMode } from "../styles/homeconstant";
-import Feather from "react-native-vector-icons/Feather";
 import { TouchableOpacity } from "react-native-gesture-handler";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import TabBarButton from "./TabBarButton";
 import Animated, {
 	useAnimatedStyle,
@@ -32,6 +31,17 @@ export const TabBar = ({
 		setDimensions({ width, height });
 	};
 	const tabPositionX = useSharedValue(0);
+
+	// Update background position when active tab changes
+	useEffect(() => {
+		const activeIndex = state.index;
+		const newPosition = activeIndex * buttonWidth;
+		tabPositionX.value = withSpring(newPosition, {
+			damping: 15,
+			stiffness: 150,
+		});
+	}, [state.index, buttonWidth]);
+
 	const animatesStyles = useAnimatedStyle(() => {
 		return {
 			transform: [{ translateX: tabPositionX.value }],
@@ -57,7 +67,9 @@ export const TabBar = ({
 				const { options } = descriptors[route.key];
 				const label =
 					options.tabBarLabel !== undefined
-						? options.tabBarLabel
+						? typeof options.tabBarLabel === "string"
+							? options.tabBarLabel
+							: route.name
 						: options.title !== undefined
 						? options.title
 						: route.name;

@@ -15,11 +15,18 @@ interface TabBarButtonProps {
 	onLongPress?: () => void;
 	isFocused: boolean;
 	routeName: string;
-	label: string;
+	label:
+		| string
+		| ((props: {
+				focused: boolean;
+				color: string;
+				position: any;
+				children: string;
+		  }) => React.ReactNode);
 	color: string;
 }
 
-type RouteName = "home" | "explore" | "settings" | "history";
+type RouteName = "home" | "explore" | "settings";
 
 const TabBarButton: React.FC<TabBarButtonProps> = ({
 	onPress,
@@ -48,11 +55,10 @@ const TabBarButton: React.FC<TabBarButtonProps> = ({
 		};
 	});
 
+	// Text should always be visible, just change color based on focus
 	const animatedTextStyle = useAnimatedStyle(() => {
-		const opacity = interpolate(scale.value, [0, 1], [1, 0]);
-
 		return {
-			opacity,
+			opacity: 1, // Always visible
 		};
 	});
 	const IconComponent = React.useMemo(() => {
@@ -76,8 +82,9 @@ const TabBarButton: React.FC<TabBarButtonProps> = ({
 			<Animated.Text
 				style={[
 					{
-						color,
+						color: isFocused ? lightMode.darkGreen : lightMode.lightGreen,
 						fontSize: 11,
+						fontWeight: isFocused ? "600" : "400",
 					},
 					animatedTextStyle,
 				]}
