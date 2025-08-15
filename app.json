@@ -2,7 +2,7 @@
 	"expo": {
 		"name": "Digital Scale",
 		"slug": "ble-reader",
-		"version": "1.0.0",
+		"version": "2.0.0",
 		"orientation": "portrait",
 		"icon": "./assets/images/appstore.png",
 		"scheme": "myapp",

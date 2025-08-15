@@ -35,12 +35,6 @@ export default function TabLayout() {
 				}}
 			/>
 			<Tabs.Screen
-				name="history"
-				options={{
-					headerShown: false,
-				}}
-			/>
-			<Tabs.Screen
 				name="explore"
 				options={{
 					headerShown: false,
@@ -49,27 +43,6 @@ export default function TabLayout() {
 			<Tabs.Screen
 				name="settings"
 				options={{
-					headerShown: false,
-				}}
-			/>
-			<Tabs.Screen
-				name="adduser"
-				options={{
-					tabBarItemStyle: { display: "none" },
-					headerShown: false,
-				}}
-			/>
-			<Tabs.Screen
-				name="weightcharts/[userId]"
-				options={{
-					tabBarItemStyle: { display: "none" },
-					headerShown: false,
-				}}
-			/>
-			<Tabs.Screen
-				name="editUsers/[userId]"
-				options={{
-					tabBarItemStyle: { display: "none" },
 					headerShown: false,
 				}}
 			/>

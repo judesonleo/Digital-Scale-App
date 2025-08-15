@@ -26,7 +26,7 @@ export const TabBar = ({
 	});
 	const [activeTabIndex, setActiveTabIndex] = useState(state.index);
 
-	const buttonWidth = dimensions.width / 4;
+	const buttonWidth = dimensions.width / 3;
 	const onTabberLayout = (event: LayoutChangeEvent) => {
 		const { width, height } = event.nativeEvent.layout;
 		setDimensions({ width, height });
@@ -87,9 +87,6 @@ export const TabBar = ({
 				switch (route.name) {
 					case "home":
 						iconName = "home";
-						break;
-					case "history":
-						iconName = "bar-chart-2";
 						break;
 					case "explore":
 						iconName = "compass";
