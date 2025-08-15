@@ -17,7 +17,7 @@ import { format } from "date-fns";
 import { useLocalSearchParams } from "expo-router";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
-import api from "../../../api";
+import api from "../../api";
 import EditWeightModal from "@/components/EditWeightModal";
 import AddWeightModal from "@/components/AddweightModel";
 
