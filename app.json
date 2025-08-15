@@ -1,63 +1,69 @@
 {
-	"expo": {
-		"name": "Digital Scale",
-		"slug": "ble-reader",
-		"version": "1.0.0",
-		"orientation": "portrait",
-		"icon": "./assets/images/appstore.png",
-		"scheme": "myapp",
-		"userInterfaceStyle": "automatic",
-		"newArchEnabled": true,
-		"ios": {
-			"supportsTablet": true,
-			"bundleIdentifier": "com.judesonleo.digitalscale",
-			"infoPlist": {
-				"UIBackgroundModes": ["fetch"]
-			}
-		},
-		"android": {
-			"adaptiveIcon": {
-				"foregroundImage": "./assets/images/appstore.png",
-				"backgroundColor": "#ffffff"
-			},
-			"package": "com.judesonleo.digitalscale"
-		},
-		"web": {
-			"bundler": "metro",
-			"output": "static",
-			"favicon": "./assets/images/favicon.png",
-			"build": {
-				"babel": {
-					"include": ["@expo/vector-icons", "expo-router"]
-				}
-			},
-			"config": {
-				"useBLE": false
-			}
-		},
-		"plugins": [
-			"expo-router",
-			[
-				"expo-splash-screen",
-				{
-					"image": "./assets/images/appstore.png",
-					"imageWidth": 200,
-					"resizeMode": "cover",
-					"backgroundColor": "#ffffff"
-				}
-			],
-			"expo-font"
-		],
-		"experiments": {
-			"typedRoutes": true
-		},
-		"extra": {
-			"router": {
-				"origin": false
-			},
-			"eas": {
-				"projectId": "your-project-id"
-			}
-		}
-	}
+  "expo": {
+    "name": "Digital Scale",
+    "slug": "ble-reader",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/images/appstore.png",
+    "scheme": "myapp",
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": true,
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.judesonleo.digitalscale",
+      "infoPlist": {
+        "UIBackgroundModes": [
+          "fetch"
+        ]
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/images/appstore.png",
+        "backgroundColor": "#ffffff"
+      },
+      "package": "com.judesonleo.digitalscale"
+    },
+    "web": {
+      "bundler": "metro",
+      "output": "static",
+      "favicon": "./assets/images/favicon.png",
+      "build": {
+        "babel": {
+          "include": [
+            "@expo/vector-icons",
+            "expo-router"
+          ]
+        }
+      },
+      "config": {
+        "useBLE": false
+      }
+    },
+    "plugins": [
+      "expo-router",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/images/appstore.png",
+          "imageWidth": 200,
+          "resizeMode": "cover",
+          "backgroundColor": "#ffffff"
+        }
+      ],
+      "expo-font",
+      "expo-web-browser"
+    ],
+    "experiments": {
+      "typedRoutes": true
+    },
+    "extra": {
+      "router": {
+        "origin": false
+      },
+      "eas": {
+        "projectId": "your-project-id"
+      }
+    }
+  }
 }
