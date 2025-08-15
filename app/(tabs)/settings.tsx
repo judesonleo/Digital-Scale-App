@@ -25,15 +25,21 @@ import {
 	Mail,
 	Shield,
 	ChevronRight,
+	Sun,
+	Smartphone,
 } from "lucide-react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { useTheme } from "@/context/ThemeContext";
+import { darkMode, lightMode } from "@/styles/homeconstant";
 
 // Define types
 type ThemeColors = {
 	background: string;
 	card: string;
-	text: string;
-	textSecondary: string;
+	text: {
+		primary: string;
+		secondary: string;
+	};
 	border: string;
 	primary: string;
 	danger: string;
@@ -59,6 +65,7 @@ interface SettingsOptionProps {
 	value?: string | boolean;
 	onPress?: () => void;
 	isSwitch?: boolean;
+	isRadio?: boolean;
 	onToggle?: (value: boolean) => void;
 	colors: ThemeColors;
 }
@@ -70,6 +77,7 @@ const SettingsOption: React.FC<SettingsOptionProps> = ({
 	value,
 	onPress,
 	isSwitch,
+	isRadio,
 	onToggle,
 	colors,
 }) => {
@@ -79,7 +87,7 @@ const SettingsOption: React.FC<SettingsOptionProps> = ({
 		<TouchableOpacity
 			style={styles.settingsOption}
 			onPress={onPress}
-			disabled={isSwitch}
+			disabled={isSwitch || isRadio}
 		>
 			<View style={styles.optionLeft}>
 				{icon}
@@ -89,13 +97,21 @@ const SettingsOption: React.FC<SettingsOptionProps> = ({
 				<Switch
 					value={value as boolean}
 					onValueChange={onToggle}
-					trackColor={{ false: colors.border, true: colors.textSecondary }}
+					trackColor={{ false: colors.border, true: colors.text.secondary }}
 					thumbColor={colors.card}
 				/>
+			) : isRadio ? (
+				<View style={styles.optionRight}>
+					{value && (
+						<View
+							style={[styles.radioButton, { backgroundColor: colors.primary }]}
+						/>
+					)}
+				</View>
 			) : (
 				<View style={styles.optionRight}>
 					{value && <Text style={styles.optionValue}>{value}</Text>}
-					<ChevronRight size={20} color={colors.textSecondary} />
+					<ChevronRight size={20} color={colors.text.secondary} />
 				</View>
 			)}
 		</TouchableOpacity>
@@ -116,17 +132,17 @@ const Settings = () => {
 		twoFactorEnabled: false,
 	});
 	const [isLoading, setIsLoading] = useState(false);
+	const { theme, setTheme, isDark } = useTheme();
 
 	// Theme Colors
 	const colors: ThemeColors = {
-		background: useThemeColor({}, "background"),
-		card: useThemeColor({}, "card"),
-		text: useThemeColor({}, "text"),
-		textSecondary: useThemeColor({}, "textSecondary"),
-		border: useThemeColor({}, "border"),
-		primary: useThemeColor({}, "primary"),
-		danger: useThemeColor({}, "danger"),
-		success: useThemeColor({}, "success"),
+		background: isDark ? darkMode.background : lightMode.background,
+		card: isDark ? darkMode.surface : lightMode.surface,
+		text: isDark ? darkMode.text : lightMode.text,
+		border: isDark ? darkMode.border : lightMode.border,
+		primary: isDark ? darkMode.primary : lightMode.primary,
+		danger: isDark ? darkMode.danger : lightMode.danger,
+		success: isDark ? darkMode.success : lightMode.success,
 	};
 
 	useEffect(() => {
@@ -216,6 +232,10 @@ const Settings = () => {
 		}));
 	};
 
+	const handleThemeChange = (newTheme: "light" | "dark" | "system") => {
+		setTheme(newTheme);
+	};
+
 	const styles = makeStyles(colors);
 
 	return (
@@ -286,11 +306,27 @@ const Settings = () => {
 						colors={colors}
 					/>
 					<SettingsOption
+						icon={<Sun size={24} color={colors.primary} />}
+						title="Light Mode"
+						isRadio
+						value={theme === "light"}
+						onToggle={() => handleThemeChange("light")}
+						colors={colors}
+					/>
+					<SettingsOption
 						icon={<Moon size={24} color={colors.primary} />}
 						title="Dark Mode"
-						isSwitch
-						value={userDetails.darkMode}
-						onToggle={() => toggleSetting("darkMode")}
+						isRadio
+						value={theme === "dark"}
+						onToggle={() => handleThemeChange("dark")}
+						colors={colors}
+					/>
+					<SettingsOption
+						icon={<Smartphone size={24} color={colors.primary} />}
+						title="System Theme"
+						isRadio
+						value={theme === "system"}
+						onToggle={() => handleThemeChange("system")}
 						colors={colors}
 					/>
 				</View>
@@ -364,17 +400,17 @@ const makeStyles = (colors: ThemeColors) =>
 		name: {
 			fontSize: 22,
 			fontWeight: "700",
-			color: colors.text,
+			color: colors.text.primary,
 			marginBottom: 4,
 		},
 		username: {
 			fontSize: 16,
-			color: colors.textSecondary,
+			color: colors.text.secondary,
 			marginBottom: 4,
 		},
 		lastLogin: {
 			fontSize: 12,
-			color: colors.textSecondary,
+			color: colors.text.secondary,
 		},
 		section: {
 			backgroundColor: colors.card,
@@ -385,7 +421,7 @@ const makeStyles = (colors: ThemeColors) =>
 		sectionTitle: {
 			fontSize: 18,
 			fontWeight: "600",
-			color: colors.text,
+			color: colors.text.primary,
 			marginBottom: 16,
 			paddingHorizontal: 4,
 		},
@@ -428,7 +464,7 @@ const makeOptionStyles = (colors: ThemeColors) =>
 		},
 		optionTitle: {
 			fontSize: 16,
-			color: colors.text,
+			color: colors.text.primary,
 			marginLeft: 12,
 		},
 		optionRight: {
@@ -437,8 +473,15 @@ const makeOptionStyles = (colors: ThemeColors) =>
 		},
 		optionValue: {
 			fontSize: 14,
-			color: colors.textSecondary,
+			color: colors.text.secondary,
 			marginRight: 8,
+		},
+		radioButton: {
+			width: 20,
+			height: 20,
+			borderRadius: 10,
+			borderWidth: 2,
+			borderColor: colors.primary,
 		},
 	});
 

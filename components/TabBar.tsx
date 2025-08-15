@@ -26,7 +26,7 @@ export const TabBar = ({
 	});
 	const [activeTabIndex, setActiveTabIndex] = useState(state.index);
 
-	const buttonWidth = dimensions.width / 3;
+	const buttonWidth = dimensions.width / 4;
 	const onTabberLayout = (event: LayoutChangeEvent) => {
 		const { width, height } = event.nativeEvent.layout;
 		setDimensions({ width, height });
@@ -56,32 +56,21 @@ export const TabBar = ({
 			{state.routes.map((route, index) => {
 				const { options } = descriptors[route.key];
 				const label =
-					typeof options.tabBarLabel === "string"
+					options.tabBarLabel !== undefined
 						? options.tabBarLabel
-						: options.title ?? route.name;
-				if (
-					[
-						"_sitemap",
-						"+not-found",
-						"adduser",
-						"weightcharts/[userId]",
-						"editUsers/[userId]",
-					].includes(route.name)
-				)
-					return null;
-				const isFocused = activeTabIndex === index;
-				const routeName = route.name.toLowerCase();
+						: options.title !== undefined
+						? options.title
+						: route.name;
+
+				const isFocused = state.index === index;
 
 				const onPress = () => {
-					setActiveTabIndex(index);
-					tabPositionX.value = withSpring(buttonWidth * index, {
-						duration: 1500,
-					});
 					const event = navigation.emit({
 						type: "tabPress",
 						target: route.key,
 						canPreventDefault: true,
 					});
+
 					if (!isFocused && !event.defaultPrevented) {
 						navigation.navigate(route.name);
 					}
@@ -94,14 +83,32 @@ export const TabBar = ({
 					});
 				};
 
+				let iconName;
+				switch (route.name) {
+					case "home":
+						iconName = "home";
+						break;
+					case "history":
+						iconName = "bar-chart-2";
+						break;
+					case "explore":
+						iconName = "compass";
+						break;
+					case "settings":
+						iconName = "settings";
+						break;
+					default:
+						iconName = "circle";
+				}
+
 				return (
 					<TabBarButton
 						key={route.key}
+						label={label}
+						isFocused={isFocused}
 						onPress={onPress}
 						onLongPress={onLongPress}
-						isFocused={isFocused}
-						routeName={routeName}
-						label={label}
+						routeName={route.name.toLowerCase()}
 						color={isFocused ? lightMode.darkGreen : lightMode.lightGreen}
 					/>
 				);

@@ -35,6 +35,12 @@ export default function TabLayout() {
 				}}
 			/>
 			<Tabs.Screen
+				name="history"
+				options={{
+					headerShown: false,
+				}}
+			/>
+			<Tabs.Screen
 				name="explore"
 				options={{
 					headerShown: false,

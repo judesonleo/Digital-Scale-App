@@ -19,7 +19,7 @@ interface TabBarButtonProps {
 	color: string;
 }
 
-type RouteName = "home" | "explore" | "settings";
+type RouteName = "home" | "explore" | "settings" | "history";
 
 const TabBarButton: React.FC<TabBarButtonProps> = ({
 	onPress,

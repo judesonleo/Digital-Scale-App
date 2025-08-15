@@ -6,6 +6,7 @@
 const tintColorLight = "#0a7ea4";
 const tintColorDark = "#fff";
 
+
 export const Colors = {
 	light: {
 		primary: "#fff",
@@ -64,10 +65,9 @@ export const Colors = {
 
 		tabIconSelected: "#969696e5",
 
-		tabBarBackground: "#13290e", // Add this line
+		tabBarBackground: "#13290e", 
+		shadowColor: "#969696e5", 
 
-		shadowColor: "#969696e5", // Add this line
-
-		indicatorColor: "#969696e5", // Add this line
+		indicatorColor: "#969696e5", 
 	},
 };

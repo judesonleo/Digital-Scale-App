@@ -12,6 +12,7 @@ import { useEffect } from "react";
 
 import { useColorScheme } from "@/hooks/useColorScheme";
 import { useAuth } from "@/hooks/useAuth";
+import { ThemeProvider as CustomThemeProvider } from "@/context/ThemeContext";
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync();
@@ -38,16 +39,18 @@ export default function RootLayout() {
 	// Explicitly redirect to the correct stack based on `user`.
 	return (
 		<ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
-			<StatusBar style="auto" />
-			<Stack screenOptions={{ headerShown: false }}>
-				{!user ? (
-					// Route to authentication screens when logged out.
-					<Stack.Screen name="(auth)" options={{ headerShown: false }} />
-				) : (
-					// Route to main tabs when logged in.
-					<Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-				)}
-			</Stack>
+			<CustomThemeProvider>
+				<StatusBar style="auto" />
+				<Stack screenOptions={{ headerShown: false }}>
+					{!user ? (
+						// Route to authentication screens when logged out.
+						<Stack.Screen name="(auth)" options={{ headerShown: false }} />
+					) : (
+						// Route to main tabs when logged in.
+						<Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+					)}
+				</Stack>
+			</CustomThemeProvider>
 		</ThemeProvider>
 	);
 }

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import {
 	View,
 	Text,
@@ -16,7 +16,19 @@ import {
 	Dimensions,
 } from "react-native";
 
-import { BleManager, Device } from "react-native-ble-plx";
+// Import BLE modules only on native platforms
+let BleManager: any;
+let Device: any;
+type BleDevice = any;
+type BleCharacteristic = any;
+type BleError = any;
+
+if (Platform.OS !== "web") {
+	const bleModule = require("react-native-ble-plx");
+	BleManager = bleModule.BleManager;
+	Device = bleModule.Device;
+}
+
 import { Buffer } from "buffer"; // Import Buffer
 import axios from "axios";
 import { Picker } from "@react-native-picker/picker";
@@ -25,23 +37,30 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import api from "@/api";
 import { getAuthToken } from "@/utils/authStorage";
 import { darkMode, lightMode } from "@/styles/homeconstant";
+import { OfflineStorage } from "@/utils/offlineStorage";
+import NetInfo, { NetInfoState } from "@react-native-community/netinfo";
 
-const manager = new BleManager();
+// Initialize BleManager only on native platforms
+const manager = Platform.OS !== "web" ? new BleManager() : null;
 const ESP32_NAME = "ESP32_TEST";
+const RECONNECT_DELAY = 5000; // 5 seconds
+const MAX_RECONNECT_ATTEMPTS = 3;
 
 // UUIDs for your ESP32
 const SERVICE_UUID = "4fafc201-1fb5-459e-8fcc-c5c9c331914b";
 const CHARACTERISTIC_UUID = "beb5483e-36e1-4688-b7f5-ea07361b26a8";
+
 interface FamilyMember {
 	userId: unknown;
-	// userId: unknown;
 	_id: string;
 	name: string;
 }
+
 interface MainUser {
 	_id: string;
 	name: string;
 }
+
 const DESIGN = {
 	colors: {
 		primary: {
@@ -140,12 +159,22 @@ const App = () => {
 	const [value, setValue] = useState("No value");
 	const [isConnected, setIsConnected] = useState(false);
 	const [isLoading, setIsLoading] = useState(false);
-	const [device, setDevice] = useState<Device | null>(null);
+	const [device, setDevice] = useState<BleDevice | null>(null);
 	const scheme = useColorScheme();
 	const [isCapturing, setIsCapturing] = useState(false);
 	const [familyMembers, setFamilyMembers] = useState<FamilyMember[]>([]);
 	const [mainUser, setMainUser] = useState<MainUser | null>(null);
 	const [refreshing, setRefreshing] = useState(false);
+	const [reconnectAttempts, setReconnectAttempts] = useState(0);
+	const [lastConnectedDevice, setLastConnectedDevice] =
+		useState<BleDevice | null>(null);
+	const [isReconnecting, setIsReconnecting] = useState(false);
+	const reconnectTimeoutRef = useRef<NodeJS.Timeout>();
+	const [isOnline, setIsOnline] = useState(true);
+	const [isSyncing, setIsSyncing] = useState(false);
+	const [isValidating, setIsValidating] = useState(false);
+	const [storageSize, setStorageSize] = useState<number>(0);
+	const [lastSyncTime, setLastSyncTime] = useState<string | null>(null);
 
 	// Request permissions for Android 12+ (API 31+)
 	const requestPermissions = async () => {
@@ -221,9 +250,180 @@ const App = () => {
 		}
 	};
 
-	// Scan and connect to the ESP32
+	// Add reconnection logic
+	const attemptReconnect = async () => {
+		if (reconnectAttempts >= MAX_RECONNECT_ATTEMPTS) {
+			Toast.show({
+				type: "error",
+				position: "top",
+				text1: "Connection Failed",
+				text2: "Maximum reconnection attempts reached. Please try again.",
+				visibilityTime: 3000,
+			});
+			return;
+		}
+
+		setIsReconnecting(true);
+		try {
+			if (lastConnectedDevice) {
+				await connectToDevice(lastConnectedDevice);
+				setReconnectAttempts(0);
+			}
+		} catch (error) {
+			console.log("Reconnection attempt failed:", error);
+			setReconnectAttempts((prev) => prev + 1);
+			reconnectTimeoutRef.current = setTimeout(
+				attemptReconnect,
+				RECONNECT_DELAY
+			);
+		} finally {
+			setIsReconnecting(false);
+		}
+	};
+
+	// Add data validation on mount
+	useEffect(() => {
+		const validateData = async () => {
+			setIsValidating(true);
+			try {
+				await OfflineStorage.validateAndCleanupData();
+			} catch (error) {
+				console.error("Error validating data:", error);
+				Toast.show({
+					type: "error",
+					position: "top",
+					text1: "Data Validation Error",
+					text2: "There was an error validating stored data",
+					visibilityTime: 2000,
+				});
+			} finally {
+				setIsValidating(false);
+			}
+		};
+		validateData();
+	}, []);
+
+	// Add storage size monitoring
+	useEffect(() => {
+		const updateStorageInfo = async () => {
+			const size = await OfflineStorage.getStorageSize();
+			setStorageSize(size);
+			const lastSync = await OfflineStorage.getLastSyncTime();
+			setLastSyncTime(lastSync);
+		};
+		updateStorageInfo();
+	}, []);
+
+	// Sync pending data when online
+	const syncPendingData = async () => {
+		if (!isOnline || isSyncing) return;
+
+		setIsSyncing(true);
+		try {
+			const pendingLogs = await OfflineStorage.getPendingSyncItems();
+			let successCount = 0;
+			let failureCount = 0;
+
+			for (const log of pendingLogs) {
+				try {
+					const response = await api.post("/api/weights", {
+						userId: log.userId,
+						weight: log.weight,
+						notes: log.notes,
+						timestamp: log.timestamp,
+					});
+
+					await OfflineStorage.markLogAsSynced(log.timestamp);
+					await OfflineStorage.updateLastSyncTime();
+					successCount++;
+				} catch (error) {
+					console.error("Error syncing weight log:", error);
+					failureCount++;
+				}
+			}
+
+			if (successCount > 0) {
+				Toast.show({
+					type: "success",
+					position: "top",
+					text1: "Sync Complete",
+					text2: `Successfully synced ${successCount} weight logs${
+						failureCount > 0 ? `, ${failureCount} failed` : ""
+					}`,
+					visibilityTime: 3000,
+				});
+			}
+		} catch (error) {
+			console.error("Error during sync:", error);
+			Toast.show({
+				type: "error",
+				position: "top",
+				text1: "Sync Failed",
+				text2: "Failed to sync weight data",
+				visibilityTime: 2000,
+			});
+		} finally {
+			setIsSyncing(false);
+		}
+	};
+
+	// Add network status monitoring
+	useEffect(() => {
+		const unsubscribe = NetInfo.addEventListener((state: NetInfoState) => {
+			setIsOnline(!!state.isConnected);
+			if (state.isConnected) {
+				syncPendingData();
+			}
+		});
+
+		return () => unsubscribe();
+	}, []);
+
+	// Enhanced device connection function
+	const connectToDevice = async (device: BleDevice) => {
+		try {
+			const connectedDevice = await device.connect();
+			setDevice(connectedDevice);
+			setIsConnected(true);
+			setLastConnectedDevice(device);
+			await updateDeviceInfo(connectedDevice);
+
+			await connectedDevice.discoverAllServicesAndCharacteristics();
+
+			// Monitor the characteristic
+			connectedDevice.monitorCharacteristicForService(
+				SERVICE_UUID,
+				CHARACTERISTIC_UUID,
+				handleCharacteristicValueChange
+			);
+
+			// Enhanced disconnection handling
+			connectedDevice.onDisconnected(handleDisconnectedDevice);
+
+			Toast.show({
+				type: "success",
+				position: "top",
+				text1: "Connected",
+				text2: "Successfully connected to scale",
+				visibilityTime: 2000,
+			});
+		} catch (error) {
+			console.log("Connection error:", error);
+			Toast.show({
+				type: "error",
+				position: "top",
+				text1: "Connection Failed",
+				text2: "Failed to connect to device",
+				visibilityTime: 2000,
+			});
+			throw error;
+		}
+	};
+
+	// Enhanced scan and connect function
 	const scanAndConnect = async () => {
 		setIsLoading(true);
+		setReconnectAttempts(0);
 
 		try {
 			// Request permissions dynamically
@@ -249,89 +449,89 @@ const App = () => {
 			const scanTimeout = setTimeout(() => {
 				manager.stopDeviceScan();
 				setIsLoading(false);
-				Alert.alert("Scan timed out, try again.");
-			}, 10000); // Stop scanning after 10 seconds
+				Toast.show({
+					type: "error",
+					position: "top",
+					text1: "Scan Timeout",
+					text2: "No device found. Please try again.",
+					visibilityTime: 2000,
+				});
+			}, 10000);
 
 			// Start scanning
-			manager.startDeviceScan(null, null, async (error, device) => {
-				if (error) {
-					console.log("Scanning error:", error);
-					clearTimeout(scanTimeout);
-					setIsLoading(false);
-					Alert.alert("Error scanning for devices");
-					return;
-				}
-				console.log(device?.name);
-				console.log(device?.id);
-				if (device?.name?.startsWith(ESP32_NAME)) {
-					clearTimeout(scanTimeout);
-					manager.stopDeviceScan();
-					console.log("Found device:", device.name);
-
-					try {
-						const connectedDevice = await device.connect();
-						setDevice(connectedDevice);
-						setIsConnected(true);
-						console.log("Connected to device:", connectedDevice.name);
-						await connectedDevice.discoverAllServicesAndCharacteristics();
-
-						// Monitor the characteristic
-						connectedDevice.monitorCharacteristicForService(
-							SERVICE_UUID,
-							CHARACTERISTIC_UUID,
-							(error, characteristic) => {
-								if (error) {
-									console.log("Monitoring error:", error);
-									return;
-								}
-
-								if (characteristic?.value) {
-									const decodedValue = Buffer.from(
-										characteristic.value,
-										"base64"
-									).toString();
-									console.log("Received value:", decodedValue);
-									setValue(decodedValue);
-								}
-							}
-						);
-
-						// Handle disconnection
-						connectedDevice.onDisconnected(() => {
-							console.log("Device disconnected");
-							setIsConnected(false);
-							setDevice(null);
-						});
-					} catch (connectionError) {
-						console.log("Connection error:", connectionError);
-						Alert.alert("Error connecting to device");
-						setIsConnected(false);
-					}
-					setIsLoading(false);
-				}
-			});
+			manager.startDeviceScan(null, null, handleDiscoverDevice);
 		} catch (error) {
 			console.log("General error:", error);
 			setIsLoading(false);
-			Alert.alert("An error occurred");
+			Toast.show({
+				type: "error",
+				position: "top",
+				text1: "Error",
+				text2: "An unexpected error occurred",
+				visibilityTime: 2000,
+			});
 		}
 	};
 
-	// Disconnect from the ESP32
+	// Enhanced disconnect function
 	const disconnect = async () => {
 		if (device) {
 			try {
 				await device.cancelConnection();
 				setIsConnected(false);
-				console.log("Disconnected from device");
+				setDevice(null);
+				setLastConnectedDevice(null);
+				await updateDeviceInfo(null);
+				if (reconnectTimeoutRef.current) {
+					clearTimeout(reconnectTimeoutRef.current);
+				}
+				Toast.show({
+					type: "success",
+					position: "top",
+					text1: "Disconnected",
+					text2: "Successfully disconnected from device",
+					visibilityTime: 2000,
+				});
 			} catch (error) {
 				console.log("Disconnection error:", error);
+				Toast.show({
+					type: "error",
+					position: "top",
+					text1: "Disconnect Error",
+					text2: "Failed to disconnect from device",
+					visibilityTime: 2000,
+				});
 			}
-		} else {
-			console.log("No device to disconnect from.");
 		}
 	};
 
+	// Cleanup on unmount
+	useEffect(() => {
+		return () => {
+			if (reconnectTimeoutRef.current) {
+				clearTimeout(reconnectTimeoutRef.current);
+			}
+			if (device) {
+				disconnect();
+			}
+		};
+	}, []);
+
+	// Update device info when connecting/disconnecting
+	const updateDeviceInfo = async (device: BleDevice | null) => {
+		try {
+			const deviceInfo = {
+				lastConnectedDevice: device?.id || null,
+				lastConnectionTime: device ? new Date().toISOString() : null,
+				batteryLevel: null as number | null, // You can add battery level monitoring here
+			};
+			await OfflineStorage.saveDeviceInfo(deviceInfo);
+		} catch (error) {
+			console.error("Error updating device info:", error);
+		}
+	};
+
+	// Update handleCapture to use offline storage
 	const handleCapture = async () => {
 		// Validate user selection and value
 		if (!userId) {
@@ -361,39 +561,58 @@ const App = () => {
 		setIsCapturing(true);
 
 		try {
-			// Send weight log to API
-			const response = await api.post("/api/weights", {
-				userId,
+			// Save to offline storage first
+			const timestamp = new Date().toISOString();
+			await OfflineStorage.saveWeightLog({
+				userId: String(userId),
 				weight: weightValue,
 				notes: "",
-			});
-			console.log("Weight log response:", response.data);
-			// Success toast
-			Toast.show({
-				type: "success",
-				position: "top",
-				text1: "Weight Logged",
-				text2: `${weightValue} logged for ${response.data.userName}`,
-				visibilityTime: 2000,
+				timestamp,
+				syncStatus: "pending",
 			});
 
-			// Reset capturing state
-			setIsCapturing(false);
+			// If online, try to sync immediately
+			if (isOnline) {
+				const response = await api.post("/api/weights", {
+					userId: String(userId),
+					weight: weightValue,
+					notes: "",
+					timestamp,
+				});
+
+				await OfflineStorage.markLogAsSynced(timestamp);
+				await OfflineStorage.updateLastSyncTime();
+
+				Toast.show({
+					type: "success",
+					position: "top",
+					text1: "Weight Logged",
+					text2: `${weightValue} logged for ${response.data.userName}`,
+					visibilityTime: 2000,
+				});
+			} else {
+				Toast.show({
+					type: "success",
+					position: "top",
+					text1: "Weight Saved",
+					text2: `${weightValue} saved offline. Will sync when online.`,
+					visibilityTime: 2000,
+				});
+			}
 		} catch (error) {
 			console.error("Error logging weight:", error);
-
-			// Error toast
 			Toast.show({
 				type: "error",
 				position: "top",
 				text1: "Logging Failed",
-				text2: "Could not log weight",
+				text2: "Could not save weight data",
 				visibilityTime: 2000,
 			});
-
+		} finally {
 			setIsCapturing(false);
 		}
 	};
+
 	// Fetch family members when component mounts
 	const fetchFamilyAndUser = async () => {
 		try {
@@ -571,6 +790,74 @@ const App = () => {
 			);
 		}
 	};
+
+	// Update type references in functions
+	const handleCharacteristicValueChange = (
+		error: BleError,
+		characteristic: BleCharacteristic
+	) => {
+		if (error) {
+			console.log("Monitoring error:", error);
+			Toast.show({
+				type: "error",
+				position: "top",
+				text1: "Connection Error",
+				text2: "Failed to monitor device data",
+				visibilityTime: 2000,
+			});
+			return;
+		}
+
+		if (characteristic?.value) {
+			const decodedValue = Buffer.from(
+				characteristic.value,
+				"base64"
+			).toString();
+			console.log("Received value:", decodedValue);
+			setValue(decodedValue);
+		}
+	};
+
+	const handleDisconnectedDevice = (
+		error: BleError,
+		disconnectedDevice: BleDevice
+	) => {
+		console.log("Device disconnected:", error);
+		setIsConnected(false);
+		setDevice(null);
+
+		// Attempt to reconnect if it wasn't a manual disconnect
+		if (!error?.message?.includes("cancelled")) {
+			attemptReconnect();
+		}
+	};
+
+	const handleDiscoverDevice = (error: BleError, device: BleDevice) => {
+		if (error) {
+			console.log("Scanning error:", error);
+			Toast.show({
+				type: "error",
+				position: "top",
+				text1: "Scan Error",
+				text2: "Failed to scan for devices",
+				visibilityTime: 2000,
+			});
+			return;
+		}
+
+		if (device?.name?.startsWith(ESP32_NAME)) {
+			manager.stopDeviceScan();
+			console.log("Found device:", device.name);
+
+			try {
+				connectToDevice(device);
+			} catch (error) {
+				console.log("Connection error:", error);
+			}
+			setIsLoading(false);
+		}
+	};
+
 	return (
 		<SafeAreaView
 			style={[
