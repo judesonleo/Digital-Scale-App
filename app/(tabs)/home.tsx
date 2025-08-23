@@ -16,18 +16,7 @@ import {
 	Dimensions,
 } from "react-native";
 
-// Import BLE modules only on native platforms
-let BleManager: any;
-let Device: any;
-type BleDevice = any;
-type BleCharacteristic = any;
-type BleError = any;
-
-if (Platform.OS !== "web") {
-	const bleModule = require("react-native-ble-plx");
-	BleManager = bleModule.BleManager;
-	Device = bleModule.Device;
-}
+import { BleManager, Device } from "react-native-ble-plx";
 
 import { Buffer } from "buffer"; // Import Buffer
 import axios from "axios";
@@ -40,8 +29,7 @@ import { darkMode, lightMode } from "@/styles/homeconstant";
 import { OfflineStorage } from "@/utils/offlineStorage";
 import NetInfo, { NetInfoState } from "@react-native-community/netinfo";
 
-// Initialize BleManager only on native platforms
-const manager = Platform.OS !== "web" ? new BleManager() : null;
+const manager = new BleManager();
 const ESP32_NAME = "ESP32_TEST";
 const RECONNECT_DELAY = 5000; // 5 seconds
 const MAX_RECONNECT_ATTEMPTS = 3;
@@ -159,15 +147,16 @@ const App = () => {
 	const [value, setValue] = useState("No value");
 	const [isConnected, setIsConnected] = useState(false);
 	const [isLoading, setIsLoading] = useState(false);
-	const [device, setDevice] = useState<BleDevice | null>(null);
+	const [device, setDevice] = useState<Device | null>(null);
 	const scheme = useColorScheme();
 	const [isCapturing, setIsCapturing] = useState(false);
 	const [familyMembers, setFamilyMembers] = useState<FamilyMember[]>([]);
 	const [mainUser, setMainUser] = useState<MainUser | null>(null);
 	const [refreshing, setRefreshing] = useState(false);
 	const [reconnectAttempts, setReconnectAttempts] = useState(0);
-	const [lastConnectedDevice, setLastConnectedDevice] =
-		useState<BleDevice | null>(null);
+	const [lastConnectedDevice, setLastConnectedDevice] = useState<Device | null>(
+		null
+	);
 	const [isReconnecting, setIsReconnecting] = useState(false);
 	const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 	const [isOnline, setIsOnline] = useState(true);
@@ -380,7 +369,7 @@ const App = () => {
 	}, []);
 
 	// Enhanced device connection function
-	const connectToDevice = async (device: BleDevice) => {
+	const connectToDevice = async (device: Device) => {
 		try {
 			const connectedDevice = await device.connect();
 			setDevice(connectedDevice);
@@ -394,7 +383,28 @@ const App = () => {
 			connectedDevice.monitorCharacteristicForService(
 				SERVICE_UUID,
 				CHARACTERISTIC_UUID,
-				handleCharacteristicValueChange
+				(error, characteristic) => {
+					if (error) {
+						console.log("Monitoring error:", error);
+						Toast.show({
+							type: "error",
+							position: "top",
+							text1: "Connection Error",
+							text2: "Failed to monitor device data",
+							visibilityTime: 2000,
+						});
+						return;
+					}
+
+					if (characteristic?.value) {
+						const decodedValue = Buffer.from(
+							characteristic.value,
+							"base64"
+						).toString();
+						console.log("Received value:", decodedValue);
+						setValue(decodedValue);
+					}
+				}
 			);
 
 			// Enhanced disconnection handling
@@ -518,7 +528,7 @@ const App = () => {
 	}, []);
 
 	// Update device info when connecting/disconnecting
-	const updateDeviceInfo = async (device: BleDevice | null) => {
+	const updateDeviceInfo = async (device: Device | null) => {
 		try {
 			const deviceInfo = {
 				lastConnectedDevice: device?.id || null,
@@ -791,37 +801,7 @@ const App = () => {
 		}
 	};
 
-	// Update type references in functions
-	const handleCharacteristicValueChange = (
-		error: BleError,
-		characteristic: BleCharacteristic
-	) => {
-		if (error) {
-			console.log("Monitoring error:", error);
-			Toast.show({
-				type: "error",
-				position: "top",
-				text1: "Connection Error",
-				text2: "Failed to monitor device data",
-				visibilityTime: 2000,
-			});
-			return;
-		}
-
-		if (characteristic?.value) {
-			const decodedValue = Buffer.from(
-				characteristic.value,
-				"base64"
-			).toString();
-			console.log("Received value:", decodedValue);
-			setValue(decodedValue);
-		}
-	};
-
-	const handleDisconnectedDevice = (
-		error: BleError,
-		disconnectedDevice: BleDevice
-	) => {
+	const handleDisconnectedDevice = (error: any, disconnectedDevice: Device) => {
 		console.log("Device disconnected:", error);
 		setIsConnected(false);
 		setDevice(null);
@@ -832,7 +812,7 @@ const App = () => {
 		}
 	};
 
-	const handleDiscoverDevice = (error: BleError, device: BleDevice) => {
+	const handleDiscoverDevice = (error: any, device: Device | null) => {
 		if (error) {
 			console.log("Scanning error:", error);
 			Toast.show({
@@ -964,10 +944,7 @@ const App = () => {
 							style={[
 								styles.weightValue,
 								{
-									color:
-										scheme === "dark"
-											? lightMode.text.primary
-											: lightMode.text.primary,
+									color: lightMode.white,
 								},
 							]}
 						>

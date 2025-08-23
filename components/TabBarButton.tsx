@@ -63,8 +63,10 @@ const TabBarButton: React.FC<TabBarButtonProps> = ({
 	});
 	const IconComponent = React.useMemo(() => {
 		const normalizedRouteName = routeName.toLowerCase() as RouteName;
-		return icon[normalizedRouteName]?.({ color }) || null;
-	}, [routeName, color]);
+		// Use white color for focused icons to ensure visibility
+		const iconColor = isFocused ? lightMode.white : lightMode.lightGreen;
+		return icon[normalizedRouteName]?.({ color: iconColor }) || null;
+	}, [routeName, isFocused]);
 	return (
 		<Pressable
 			onPress={onPress}
@@ -82,7 +84,7 @@ const TabBarButton: React.FC<TabBarButtonProps> = ({
 			<Animated.Text
 				style={[
 					{
-						color: isFocused ? lightMode.darkGreen : lightMode.lightGreen,
+						color: isFocused ? "transparent" : lightMode.lightGreen,
 						fontSize: 11,
 						fontWeight: isFocused ? "600" : "400",
 					},
@@ -93,7 +95,7 @@ const TabBarButton: React.FC<TabBarButtonProps> = ({
 					? label
 					: label({
 							focused: isFocused,
-							color: isFocused ? lightMode.darkGreen : lightMode.lightGreen,
+							color: isFocused ? "transparent" : lightMode.lightGreen,
 							position: "below",
 							children: "",
 					  })}

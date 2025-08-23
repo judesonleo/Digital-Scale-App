@@ -54,7 +54,7 @@ export const TabBar = ({
 					animatesStyles,
 					{
 						position: "absolute",
-						backgroundColor: lightMode.lightGreen,
+						backgroundColor: lightMode.darkGreen,
 						borderRadius: 30,
 						marginHorizontal: 12,
 						// width: buttonWidth,
@@ -118,7 +118,7 @@ export const TabBar = ({
 						onPress={onPress}
 						onLongPress={onLongPress}
 						routeName={route.name.toLowerCase()}
-						color={isFocused ? lightMode.darkGreen : lightMode.lightGreen}
+						color={isFocused ? lightMode.white : lightMode.lightGreen}
 					/>
 				);
 			})}
