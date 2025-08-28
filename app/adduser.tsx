@@ -20,6 +20,8 @@ import { getAuthToken } from "@/utils/authStorage";
 import api from "@/api";
 import { router } from "expo-router";
 import { Picker, PickerIOS } from "@react-native-picker/picker";
+import { lightMode, darkMode } from "@/styles/homeconstant";
+import { useTheme } from "@/context/ThemeContext";
 
 // Interfaces remain the same
 interface UserDetails {
@@ -45,54 +47,10 @@ interface FormErrors {
 
 interface InputFieldProps extends Omit<TextInputProps, "style"> {
 	error?: string;
-	theme: typeof lightTheme | typeof darkTheme;
+	isDark: boolean;
 }
 
-// Theme definitions
-
-const palette = {
-	outerSpace: "#484C47",
-	brunswickGreen: "#304C37",
-	babyPowder: "#FBFCFA",
-	night: "#11100E",
-	hookersGreen: "#406F62",
-	darkGreen: "#203228",
-	darkGreen2: "#092B1B",
-	white: "#FFFFFF",
-	timberwolf: "#CED3D1",
-	darkGreen3: "#0D301C",
-} as const;
-
-// Theme definitions using the palette
-const lightTheme = {
-	primary: palette.brunswickGreen,
-	secondary: palette.hookersGreen,
-	background: palette.babyPowder,
-	surface: palette.white,
-	text: palette.night,
-	textSecondary: palette.outerSpace,
-	border: palette.timberwolf,
-	error: "#dc3545", // keeping error red for better visibility
-	success: palette.darkGreen2,
-	inputBackground: palette.white,
-	buttonBackground: palette.darkGreen2,
-	buttonText: palette.white,
-} as const;
-
-const darkTheme = {
-	primary: palette.hookersGreen,
-	secondary: palette.brunswickGreen,
-	background: palette.night,
-	surface: palette.darkGreen,
-	text: palette.babyPowder,
-	textSecondary: palette.timberwolf,
-	border: palette.darkGreen3,
-	error: "#cf6679", // softer red for dark mode
-	success: palette.brunswickGreen,
-	inputBackground: palette.darkGreen3,
-	buttonBackground: palette.hookersGreen,
-	buttonText: palette.white,
-} as const;
+// Using app's consistent theme colors
 
 // Memoized Input Field Component
 const InputField = memo<InputFieldProps>(
@@ -103,37 +61,44 @@ const InputField = memo<InputFieldProps>(
 		error,
 		secureTextEntry,
 		keyboardType,
-		theme,
-	}) => (
-		<View style={styles.inputContainer}>
-			<TextInput
-				style={[
-					styles.input,
-					{
-						backgroundColor: theme.background,
-						borderColor: error ? theme.error : theme.border,
-						color: theme.text,
-					},
-				]}
-				placeholder={placeholder}
-				placeholderTextColor={theme.textSecondary}
-				value={value}
-				onChangeText={onChangeText}
-				secureTextEntry={secureTextEntry}
-				keyboardType={keyboardType}
-				autoCapitalize="none"
-				autoCorrect={false}
-			/>
-			{error && (
-				<Text style={[styles.errorText, { color: theme.error }]}>{error}</Text>
-			)}
-		</View>
-	)
+		isDark,
+	}) => {
+		const colors = isDark ? darkMode : lightMode;
+
+		return (
+			<View style={styles.inputContainer}>
+				<TextInput
+					style={[
+						styles.input,
+						{
+							backgroundColor: colors.surface,
+							borderColor: error ? colors.danger : colors.border,
+							color: colors.text.primary,
+						},
+					]}
+					placeholder={placeholder}
+					placeholderTextColor={colors.text.secondary}
+					value={value}
+					onChangeText={onChangeText}
+					secureTextEntry={secureTextEntry}
+					keyboardType={keyboardType}
+					autoCapitalize="none"
+					autoCorrect={false}
+				/>
+				{error && (
+					<Text style={[styles.errorText, { color: colors.danger }]}>
+						{error}
+					</Text>
+				)}
+			</View>
+		);
+	}
 );
 
 const AddUser: React.FC = () => {
 	const colorScheme = useColorScheme();
-	const theme = colorScheme === "dark" ? darkTheme : lightTheme;
+	const { isDark } = useTheme();
+	const colors = isDark ? darkMode : lightMode;
 
 	const [userDetails, setUserDetails] = useState<UserDetails>({ userId: "" });
 	const [newFamilyMember, setNewFamilyMember] = useState<FamilyMember>({
@@ -239,9 +204,9 @@ const AddUser: React.FC = () => {
 	}, [newFamilyMember, userDetails, validateForm]);
 
 	return (
-		<SafeAreaView style={{ flex: 1 }}>
+		<SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
 			<KeyboardAvoidingView
-				style={[styles.container, { backgroundColor: "#000" }]}
+				style={[styles.container, { backgroundColor: colors.background }]}
 				behavior={Platform.OS === "ios" ? "padding" : "height"}
 				keyboardVerticalOffset={Platform.OS === "ios" ? 64 : 0}
 			>
@@ -250,26 +215,17 @@ const AddUser: React.FC = () => {
 					contentContainerStyle={styles.scrollContainer}
 					keyboardShouldPersistTaps="handled"
 				>
-					<TouchableOpacity
-						onPress={() => router.navigate("/(tabs)/settings")}
-						style={styles.backButton}
-					>
-						<Text style={[styles.backButtonText, { color: theme.secondary }]}>
-							← Back
-						</Text>
-					</TouchableOpacity>
-
 					<Animated.View
 						style={[
 							styles.formContainer,
 							{
-								backgroundColor: theme.background,
+								backgroundColor: colors.surface,
 								opacity: fadeAnim,
 								transform: [{ translateY: slideAnim }],
 							},
 						]}
 					>
-						<Text style={[styles.title, { color: theme.primary }]}>
+						<Text style={[styles.title, { color: colors.text.primary }]}>
 							Add Family Member
 						</Text>
 
@@ -278,7 +234,7 @@ const AddUser: React.FC = () => {
 							value={newFamilyMember.name}
 							onChangeText={handleInputChange("name")}
 							error={errors.name}
-							theme={theme}
+							isDark={isDark}
 						/>
 
 						<InputField
@@ -286,7 +242,7 @@ const AddUser: React.FC = () => {
 							value={newFamilyMember.username}
 							onChangeText={handleInputChange("username")}
 							error={errors.username}
-							theme={theme}
+							isDark={isDark}
 						/>
 
 						<InputField
@@ -294,7 +250,7 @@ const AddUser: React.FC = () => {
 							value={newFamilyMember.relationship}
 							onChangeText={handleInputChange("relationship")}
 							error={errors.relationship}
-							theme={theme}
+							isDark={isDark}
 						/>
 
 						{/* <InputField
@@ -310,15 +266,13 @@ const AddUser: React.FC = () => {
 							style={[
 								styles.input,
 								{
-									backgroundColor: theme.background,
+									backgroundColor: colors.surface,
 									height: Platform.OS === "ios" ? 220 : 55,
 									marginBottom: Platform.OS === "ios" ? 15 : 15,
 									borderRadius: 8,
 									borderWidth: 1,
-									borderColor:
-										colorScheme === "dark"
-											? darkTheme.border
-											: lightTheme.border,
+									borderColor: colors.border,
+									color: colors.text.primary,
 								},
 							]}
 						>
@@ -334,20 +288,22 @@ const AddUser: React.FC = () => {
 							onChangeText={handleInputChange("height")}
 							error={errors.height}
 							keyboardType="numeric"
-							theme={theme}
+							isDark={isDark}
 						/>
 
 						<TouchableOpacity
 							style={[
 								styles.dateButton,
 								{
-									backgroundColor: theme.background,
-									borderColor: theme.border,
+									backgroundColor: colors.surface,
+									borderColor: colors.border,
 								},
 							]}
 							onPress={() => setShowDatePicker(true)}
 						>
-							<Text style={[styles.dateButtonText, { color: theme.text }]}>
+							<Text
+								style={[styles.dateButtonText, { color: colors.text.primary }]}
+							>
 								Date of Birth: {newFamilyMember.dob.toLocaleDateString()}
 							</Text>
 						</TouchableOpacity>
@@ -368,16 +324,11 @@ const AddUser: React.FC = () => {
 						)}
 
 						<TouchableOpacity
-							style={[
-								styles.submitButton,
-								{ backgroundColor: theme.buttonBackground },
-							]}
+							style={[styles.submitButton, { backgroundColor: colors.primary }]}
 							onPress={handleAddUser}
 							activeOpacity={0.8}
 						>
-							<Text
-								style={[styles.submitButtonText, { color: theme.buttonText }]}
-							>
+							<Text style={[styles.submitButtonText, { color: colors.white }]}>
 								Add Family Member
 							</Text>
 						</TouchableOpacity>
@@ -391,69 +342,82 @@ const AddUser: React.FC = () => {
 const styles = StyleSheet.create({
 	container: {
 		flex: 1,
-		paddingTop: 30,
+		paddingTop: 10,
 	},
 	scrollContainer: {
 		flexGrow: 1,
 		padding: 20,
+		paddingBottom: 100,
 	},
-	backButton: {
-		// paddingVertical: 10,
-		paddingHorizontal: 20,
-		marginBottom: 20,
-	},
-	backButtonText: {
-		fontSize: 16,
-		fontWeight: "600",
-	},
+
 	formContainer: {
-		borderRadius: 15,
+		borderRadius: 16,
 		padding: 20,
-		shadowColor: "#000",
-		shadowOffset: { width: 0, height: 2 },
-		shadowOpacity: 0.1,
-		shadowRadius: 8,
-		elevation: 5,
-		// marginBottom: 120,
+		marginHorizontal: 4,
+		...Platform.select({
+			ios: {
+				shadowColor: "#000",
+				shadowOffset: { width: 0, height: 2 },
+				shadowOpacity: 0.1,
+				shadowRadius: 8,
+			},
+			android: {
+				elevation: 4,
+			},
+		}),
 	},
 	title: {
-		fontSize: 24,
-		fontWeight: "bold",
-		marginBottom: 20,
+		fontSize: 28,
+		fontWeight: "700",
+		marginBottom: 24,
 		textAlign: "center",
 	},
 	inputContainer: {
-		marginBottom: 15,
+		marginBottom: 16,
 	},
 	input: {
 		borderWidth: 1,
-		borderRadius: 8,
-		padding: 15,
+		borderRadius: 12,
+		padding: 16,
 		fontSize: 16,
+		fontWeight: "500",
 	},
 	errorText: {
 		fontSize: 12,
 		marginTop: 5,
 		marginLeft: 5,
+		fontWeight: "500",
 	},
 	dateButton: {
 		borderWidth: 1,
-		borderRadius: 8,
-		padding: 15,
-		marginBottom: 15,
+		borderRadius: 12,
+		padding: 16,
+		marginBottom: 16,
 	},
 	dateButtonText: {
 		fontSize: 16,
+		fontWeight: "500",
 	},
 	submitButton: {
-		borderRadius: 8,
-		padding: 15,
+		borderRadius: 12,
+		padding: 16,
 		alignItems: "center",
-		marginTop: 10,
+		marginTop: 16,
+		...Platform.select({
+			ios: {
+				shadowColor: "#000",
+				shadowOffset: { width: 0, height: 2 },
+				shadowOpacity: 0.2,
+				shadowRadius: 4,
+			},
+			android: {
+				elevation: 3,
+			},
+		}),
 	},
 	submitButtonText: {
 		fontSize: 16,
-		fontWeight: "600",
+		fontWeight: "700",
 	},
 });
 
