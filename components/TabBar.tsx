@@ -54,7 +54,7 @@ export const TabBar = ({
 					animatesStyles,
 					{
 						position: "absolute",
-						backgroundColor: lightMode.darkGreen,
+						backgroundColor: lightMode.lightGreen,
 						borderRadius: 30,
 						marginHorizontal: 12,
 						// width: buttonWidth,

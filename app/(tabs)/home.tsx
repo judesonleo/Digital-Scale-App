@@ -164,6 +164,24 @@ const App = () => {
 	const [isValidating, setIsValidating] = useState(false);
 	const [storageSize, setStorageSize] = useState<number>(0);
 	const [lastSyncTime, setLastSyncTime] = useState<string | null>(null);
+	const scanTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+	// Component cleanup on unmount
+	useEffect(() => {
+		return () => {
+			// Cleanup on component unmount
+			if (device) {
+				device.cancelConnection().catch(() => {});
+			}
+			manager.stopDeviceScan();
+			if (scanTimeoutRef.current) {
+				clearTimeout(scanTimeoutRef.current);
+			}
+			if (reconnectTimeoutRef.current) {
+				clearTimeout(reconnectTimeoutRef.current);
+			}
+		};
+	}, [device]);
 
 	// Request permissions for Android 12+ (API 31+)
 	const requestPermissions = async () => {
@@ -371,7 +389,20 @@ const App = () => {
 	// Enhanced device connection function
 	const connectToDevice = async (device: Device) => {
 		try {
-			const connectedDevice = await device.connect();
+			// Android-specific: Check if device is already connected
+			if (Platform.OS === "android") {
+				const isAlreadyConnected = await device.isConnected();
+				if (isAlreadyConnected) {
+					console.log("Device already connected, disconnecting first...");
+					await device.cancelConnection();
+					await new Promise((resolve) => setTimeout(resolve, 1000));
+				}
+			}
+
+			const connectedDevice = await device.connect({
+				autoConnect: false, // Disable auto-connect for more reliable connections
+				requestMTU: 512, // Request larger MTU for better performance
+			});
 			setDevice(connectedDevice);
 			setIsConnected(true);
 			setLastConnectedDevice(device);
@@ -436,6 +467,13 @@ const App = () => {
 		setReconnectAttempts(0);
 
 		try {
+			// Stop any ongoing scan and clear device cache (Android fix)
+			manager.stopDeviceScan();
+
+			// Android-specific: Add small delay to let BLE stack cleanup
+			if (Platform.OS === "android") {
+				await new Promise((resolve) => setTimeout(resolve, 500));
+			}
 			// Request permissions dynamically
 			let hasPermissions = false;
 			if (Number(Platform.Version) >= 31) {
@@ -456,7 +494,7 @@ const App = () => {
 				return;
 			}
 
-			const scanTimeout = setTimeout(() => {
+			scanTimeoutRef.current = setTimeout(() => {
 				manager.stopDeviceScan();
 				setIsLoading(false);
 				Toast.show({
@@ -473,6 +511,11 @@ const App = () => {
 		} catch (error) {
 			console.log("General error:", error);
 			setIsLoading(false);
+			// Clear scan timeout on error
+			if (scanTimeoutRef.current) {
+				clearTimeout(scanTimeoutRef.current);
+				scanTimeoutRef.current = null;
+			}
 			Toast.show({
 				type: "error",
 				position: "top",
@@ -487,13 +530,29 @@ const App = () => {
 	const disconnect = async () => {
 		if (device) {
 			try {
+				// Stop any ongoing monitoring
+				manager.stopDeviceScan();
+
+				// Cancel connection
 				await device.cancelConnection();
+
+				// Android-specific: Add delay for proper cleanup
+				if (Platform.OS === "android") {
+					await new Promise((resolve) => setTimeout(resolve, 500));
+				}
+
 				setIsConnected(false);
 				setDevice(null);
 				setLastConnectedDevice(null);
 				await updateDeviceInfo(null);
+
 				if (reconnectTimeoutRef.current) {
 					clearTimeout(reconnectTimeoutRef.current);
+					reconnectTimeoutRef.current = null;
+				}
+				if (scanTimeoutRef.current) {
+					clearTimeout(scanTimeoutRef.current);
+					scanTimeoutRef.current = null;
 				}
 				Toast.show({
 					type: "success",
@@ -504,6 +563,10 @@ const App = () => {
 				});
 			} catch (error) {
 				console.log("Disconnection error:", error);
+				// Force cleanup even if disconnect fails
+				setIsConnected(false);
+				setDevice(null);
+				setLastConnectedDevice(null);
 				Toast.show({
 					type: "error",
 					position: "top",
@@ -827,6 +890,11 @@ const App = () => {
 
 		if (device?.name?.startsWith(ESP32_NAME)) {
 			manager.stopDeviceScan();
+			// Clear the scan timeout since we found the device
+			if (scanTimeoutRef.current) {
+				clearTimeout(scanTimeoutRef.current);
+				scanTimeoutRef.current = null;
+			}
 			console.log("Found device:", device.name);
 
 			try {
@@ -931,10 +999,7 @@ const App = () => {
 							style={[
 								styles.weightLabel,
 								{
-									color:
-										scheme === "dark"
-											? lightMode.white
-											: lightMode.text.primary,
+									color: scheme === "dark" ? lightMode.white : lightMode.white,
 								},
 							]}
 						>

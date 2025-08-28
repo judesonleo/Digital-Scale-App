@@ -8,6 +8,7 @@ interface ThemeContextType {
 	theme: Theme;
 	setTheme: (theme: Theme) => void;
 	isDark: boolean;
+	scheme: "light" | "dark";
 }
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
@@ -48,8 +49,10 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({
 	const isDark =
 		theme === "system" ? systemColorScheme === "dark" : theme === "dark";
 
+	const scheme = isDark ? "dark" : "light";
+
 	return (
-		<ThemeContext.Provider value={{ theme, setTheme, isDark }}>
+		<ThemeContext.Provider value={{ theme, setTheme, isDark, scheme }}>
 			{children}
 		</ThemeContext.Provider>
 	);
